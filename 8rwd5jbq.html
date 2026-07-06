@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Network+ 模擬試験ツール</title>
+<style>
+:root{
+  --ink:#1b2430;
+  --paper:#f6f5f2;
+  --panel:#ffffff;
+  --line:#dcd8d0;
+  --accent:#3d5a80;
+  --accent-dark:#2c4260;
+  --good:#2a9d8f;
+  --bad:#c1483a;
+  --warn:#e0952a;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-tap-highlight-color:transparent;}
+body{padding-bottom:40px;}
+.app{max-width:720px;margin:0 auto;padding:0 16px;}
+header.top{background:var(--ink);color:#fff;padding:18px 16px 16px;position:sticky;top:0;z-index:20;}
+header.top .inner{max-width:720px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+header.top h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.02em;}
+header.top .examcode{font-family:var(--mono);font-size:11px;color:#b9c4d6;letter-spacing:.05em;}
+nav.tabs{display:flex;gap:6px;padding:10px 16px 0;max-width:720px;margin:0 auto;flex-wrap:wrap;}
+nav.tabs button{flex:1 1 auto;min-width:76px;padding:9px 6px;font-size:12.5px;border:1px solid var(--line);background:var(--panel);border-radius:8px 8px 0 0;color:#5a6472;cursor:pointer;font-family:var(--sans);}
+nav.tabs button.active{background:var(--paper);border-bottom-color:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 -2px 0 var(--accent) inset;}
+main{padding-top:16px;}
+.view{display:none;}
+.view.active{display:block;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--accent-dark);}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.stat-box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;}
+.stat-box .num{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent-dark);}
+.stat-box .label{font-size:11px;color:#75808c;margin-top:2px;}
+.domain-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+.domain-row:last-child{border-bottom:none;}
+.domain-row .name{flex:0 0 108px;font-size:12.5px;color:#3c4a58;}
+.bar-track{flex:1;height:8px;background:#eceae5;border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--accent);border-radius:5px;}
+.domain-row .pct{font-family:var(--mono);font-size:12px;width:38px;text-align:right;color:#5a6472;}
+button.primary{background:var(--accent);color:#fff;border:none;padding:12px 16px;border-radius:8px;font-size:14.5px;font-weight:600;cursor:pointer;width:100%;font-family:var(--sans);}
+button.primary:active{background:var(--accent-dark);}
+button.secondary{background:var(--panel);color:var(--accent-dark);border:1px solid var(--accent);padding:10px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;font-family:var(--sans);}
+button.ghost{background:transparent;border:1px solid var(--line);color:#5a6472;padding:8px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:var(--sans);}
+.mode-list{display:flex;flex-direction:column;gap:10px;}
+.mode-btn{display:block;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;font-family:var(--sans);}
+.mode-btn .t{font-size:14.5px;font-weight:600;color:var(--ink);}
+.mode-btn .d{font-size:12px;color:#75808c;margin-top:3px;}
+.mode-btn:active{background:#efeee9;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.chip{font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:#3c4a58;font-family:var(--sans);}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.qhead{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;color:#75808c;margin-bottom:8px;}
+.qhead .domain-tag{background:#eceae5;color:#3c4a58;padding:2px 8px;border-radius:5px;font-family:var(--sans);}
+.qtext{font-size:16px;line-height:1.6;margin:0 0 16px;font-weight:500;}
+.choice{display:block;width:100%;text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:9px;font-size:14.5px;line-height:1.5;cursor:pointer;font-family:var(--sans);color:var(--ink);}
+.choice .idx{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:#eceae5;font-family:var(--mono);font-size:11px;margin-right:8px;color:#5a6472;}
+.choice.correct{border-color:var(--good);background:#eaf6f4;}
+.choice.correct .idx{background:var(--good);color:#fff;}
+.choice.wrong{border-color:var(--bad);background:#fbeceb;}
+.choice.wrong .idx{background:var(--bad);color:#fff;}
+.choice.disabled{cursor:default;}
+.choice.checked{border-color:var(--accent);background:#eef2f6;}
+.choice.checked .idx{background:var(--accent);color:#fff;}
+.choice .idx.box{border-radius:5px;}
+.multi-hint{font-size:11.5px;color:var(--accent-dark);background:#eef2f6;border-radius:6px;padding:6px 10px;margin-bottom:10px;display:inline-block;}
+.submitbtn{display:none;}
+.explain{background:#f0f4f8;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13.5px;line-height:1.7;color:#33404d;margin-top:4px;}
+.explain b{color:var(--accent-dark);}
+.qfoot{display:flex;gap:10px;margin-top:16px;}
+.flagbtn{font-size:12px;padding:8px 12px;border-radius:8px;border:1px solid var(--warn);background:#fff;color:var(--warn);cursor:pointer;font-family:var(--sans);}
+.flagbtn.on{background:var(--warn);color:#fff;}
+.progressbar{height:5px;background:#eceae5;border-radius:3px;overflow:hidden;margin-bottom:14px;}
+.progressbar .fill{height:100%;background:var(--accent);}
+.timerbox{font-family:var(--mono);font-size:13px;color:#5a6472;}
+.timerbox.low{color:var(--bad);font-weight:700;}
+.resultscore{text-align:center;padding:20px 0;}
+.resultscore .big{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--accent-dark);}
+.resultscore .sub{font-size:13px;color:#75808c;margin-top:4px;}
+.pass{color:var(--good) !important;}
+.fail{color:var(--bad) !important;}
+textarea.io{width:100%;height:90px;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fbfaf8;}
+.small{font-size:11.5px;color:#75808c;line-height:1.6;}
+.review-item{border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:10px;}
+.review-item .rq{font-size:13.5px;font-weight:600;margin-bottom:6px;}
+.review-item .rmeta{font-family:var(--mono);font-size:11px;color:#75808c;margin-bottom:6px;}
+footer.note{max-width:720px;margin:20px auto 0;padding:0 16px;font-size:11px;color:#9aa1a8;text-align:center;line-height:1.6;}
+@media (min-width:640px){
+  .qtext{font-size:17px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="inner">
+    <h1>Network+ 模擬試験</h1>
+    <span class="examcode">CompTIA Network+ (N10-009)</span>
+  </div>
+</header>
+<nav class="tabs">
+  <button data-tab="home" class="active">ホーム</button>
+  <button data-tab="practice">分野別演習</button>
+  <button data-tab="mock">模擬試験</button>
+  <button data-tab="review">苦手復習</button>
+  <button data-tab="data">データ</button>
+</nav>
+<main>
+
+  <section id="view-home" class="view active">
+    <div class="card">
+      <h2>学習状況サマリー</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num" id="stat-total">0</div><div class="label">総回答数</div></div>
+        <div class="stat-box"><div class="num" id="stat-acc">0%</div><div class="label">全体正答率</div></div>
+        <div class="stat-box"><div class="num" id="stat-mastered">0</div><div class="label">習得済み問題</div></div>
+        <div class="stat-box"><div class="num" id="stat-weak">0</div><div class="label">苦手フラグ問題</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>分野別 正答率</h2>
+      <div id="domain-bars"></div>
+    </div>
+    <div class="card">
+      <h2>すぐ始める</h2>
+      <div class="mode-list">
+        <div class="mode-btn" id="quick-mock"><div class="t">模擬試験(90問・90分)を開始</div><div class="d">本番の出題比率で全分野からランダム出題</div></div>
+        <div class="mode-btn" id="quick-weak"><div class="t">苦手問題を復習</div><div class="d">これまで間違えた・フラグを付けた問題だけを演習</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-practice" class="view">
+    <div class="card">
+      <h2>分野を選択</h2>
+      <div class="chip-row" id="domain-chips"></div>
+      <div style="margin-top:14px;">
+        <label class="small">出題数</label>
+        <div class="chip-row" id="count-chips">
+          <span class="chip" data-count="10">10問</span>
+          <span class="chip" data-count="20">20問</span>
+          <span class="chip" data-count="0">分野の全問</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="primary" id="start-practice">この条件で演習を開始</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-mock" class="view">
+    <div class="card">
+      <h2>模擬試験モード</h2>
+      <p class="small">実際の試験と同様、全分野から出題比率に応じてランダムに出題します。制限時間内にすべて解答し、最後にスコアと分野別内訳を確認できます。</p>
+      <div class="chip-row" id="mock-len-chips">
+        <span class="chip on" data-len="20" data-min="20">20問(20分)</span>
+        <span class="chip" data-len="45" data-min="45">45問(45分)</span>
+        <span class="chip" data-len="90" data-min="90">90問(90分・本番想定)</span>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="primary" id="start-mock">模擬試験を開始</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-review" class="view">
+    <div class="card">
+      <h2>苦手問題復習</h2>
+      <p class="small">直近の解答で不正解だった問題、および手動でフラグを付けた問題の一覧です。タップすると解説を確認できます。</p>
+      <div style="margin:12px 0;">
+        <button class="primary" id="start-review">苦手問題をまとめて演習</button>
+      </div>
+      <div id="review-list"></div>
+    </div>
+  </section>
+
+  <section id="view-data" class="view">
+    <div class="card">
+      <h2>バックアップ(書き出し)</h2>
+      <p class="small">学習履歴(正誤記録・フラグ)をテキストとして書き出します。コピーして保存するか、別の端末に貼り付けて読み込めます。</p>
+      <button class="secondary" id="export-btn">学習履歴を書き出す</button>
+      <textarea class="io" id="export-area" readonly placeholder="ここに書き出し結果が表示されます"></textarea>
+    </div>
+    <div class="card">
+      <h2>復元(読み込み)</h2>
+      <p class="small">書き出したテキストを貼り付けて読み込みます。現在の端末の履歴は上書きされます。</p>
+      <textarea class="io" id="import-area" placeholder="ここにバックアップテキストを貼り付け"></textarea>
+      <div style="margin-top:8px;">
+        <button class="secondary" id="import-btn">この内容で復元する</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>リセット</h2>
+      <p class="small">すべての学習履歴を削除し、最初の状態に戻します。この操作は取り消せません。</p>
+      <button class="ghost" id="reset-btn">全履歴を削除する</button>
+    </div>
+  </section>
+
+  <section id="view-quiz" class="view">
+    <div class="progressbar"><div class="fill" id="quiz-progressfill" style="width:0%"></div></div>
+    <div class="qhead">
+      <span id="quiz-counter">問題 1 / 10</span>
+      <span class="timerbox" id="quiz-timer"></span>
+    </div>
+    <div class="card">
+      <div class="qhead" style="margin-bottom:14px;"><span class="domain-tag" id="quiz-domain-tag">分野</span><span></span></div>
+      <p class="qtext" id="quiz-qtext"></p>
+      <div id="quiz-choices"></div>
+      <button class="primary submitbtn" id="quiz-submit">選択した答えで解答する</button>
+      <div id="quiz-explain"></div>
+      <div class="qfoot">
+        <button class="flagbtn" id="quiz-flag">🚩 苦手フラグ</button>
+        <button class="secondary" id="quiz-next" style="flex:1;display:none;">次の問題へ</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-result" class="view">
+    <div class="card">
+      <div class="resultscore">
+        <div class="big" id="result-score">0%</div>
+        <div class="sub" id="result-detail">0 / 0 問正解</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>分野別 内訳</h2>
+      <div id="result-domain-bars"></div>
+    </div>
+    <div class="card">
+      <button class="primary" id="result-review-btn">間違えた問題を復習する</button>
+      <div style="height:10px;"></div>
+      <button class="secondary" id="result-home-btn" style="width:100%;">ホームに戻る</button>
+    </div>
+  </section>
+
+</main>
+<footer class="note">全問題データと学習履歴は端末内(localStorage)に保存され、外部通信は一切行いません。<br>本ツールはCompTIA公式試験問題ではなく、公開されている出題範囲(Exam Objectives)に基づくオリジナル問題です。</footer>
+</div>
+
+<script>
+const EXAM_TITLE = "Network+";
+const EXAM_CODE = "CompTIA Network+ (N10-009)";
+const STORAGE_KEY = "netplus_mock_history_v1";
+const DOMAIN_LABELS = {"concepts": "ネットワーキング概念", "implementation": "実装", "operations": "ネットワーク運用", "security": "ネットワークセキュリティ", "troubleshooting": "トラブルシューティング"};
+const DOMAIN_WEIGHTS = {"concepts": 0.24, "implementation": 0.19, "operations": 0.16, "security": 0.19, "troubleshooting": 0.22};
+const QUESTIONS = [{"id": "np-c-001", "domain": "concepts", "q": "OSI参照モデルにおいて、IPアドレスに基づくルーティングを担う層はどれか。", "choices": ["物理層(レイヤー1)", "データリンク層(レイヤー2)", "ネットワーク層(レイヤー3)", "トランスポート層(レイヤー4)"], "answer": 2, "explanation": "正解はネットワーク層(レイヤー3)。IPアドレスに基づく経路選択(ルーティング)はこの層の役割です。物理層はビット列の伝送、データリンク層はMACアドレスによる同一セグメント内通信、トランスポート層はポート番号によるプロセス間通信(TCP/UDP)を担うため、いずれもIPルーティングの説明としては誤りです。"}, {"id": "np-c-002", "domain": "concepts", "q": "WebサーバーへのHTTPS通信で使用される標準ポート番号はどれか。", "choices": ["80", "443", "3389", "8080"], "answer": 1, "explanation": "正解は443。HTTPS(TLS上のHTTP)の標準ポートです。80はHTTP(暗号化なし)の標準ポート、3389はRDP(リモートデスクトップ)のポート、8080は代替HTTPポートとしてよく使われますが標準ではありません。"}, {"id": "np-c-003", "domain": "concepts", "q": "DHCPサーバーがクライアントにIPアドレスを払い出す際に使用するポート番号の組み合わせとして正しいものはどれか。", "choices": ["サーバー67/クライアント68", "サーバー68/クライアント67", "サーバー53/クライアント53", "サーバー69/クライアント69"], "answer": 0, "explanation": "正解はサーバー側UDP67、クライアント側UDP68。この組み合わせを逆にした選択肢2は典型的な引っかけです。53はDNS、69はTFTPのポートであり、DHCPとは無関係です。"}, {"id": "np-c-004", "domain": "concepts", "q": "クラウドサービスモデルのうち、OSやミドルウェアの管理はプロバイダーが行い、利用者はアプリケーションの開発・実行に専念できるものはどれか。", "choices": ["IaaS", "PaaS", "SaaS", "DaaS"], "answer": 1, "explanation": "正解はPaaS(Platform as a Service)。OSやランタイム環境をプロバイダーが管理し、利用者はアプリケーション開発に集中できます。IaaSは仮想マシンやストレージなどインフラのみを提供し、OS以上は利用者が管理します。SaaSは完成したアプリケーションをそのまま利用する形態です。DaaSは仮想デスクトップの提供を指します。"}, {"id": "np-c-005", "domain": "concepts", "q": "IPv6アドレス「fe80::/10」が示すアドレスの種別はどれか。", "choices": ["グローバルユニキャストアドレス", "リンクローカルアドレス", "マルチキャストアドレス", "ユニークローカルアドレス"], "answer": 1, "explanation": "正解はリンクローカルアドレス。fe80::/10は同一リンク内でのみ有効なアドレスです。グローバルユニキャストは2000::/3、マルチキャストはff00::/8、ユニークローカルアドレス(IPv4のプライベートアドレスに相当)はfc00::/7が該当し、いずれもfe80::/10とは異なります。"}, {"id": "np-c-006", "domain": "concepts", "q": "あるホストのIPアドレスが192.168.10.65/27の場合、このホストが属するサブネットのネットワークアドレスはどれか。", "choices": ["192.168.10.0", "192.168.10.32", "192.168.10.64", "192.168.10.96"], "answer": 2, "explanation": "正解は192.168.10.64。/27はサブネットマスク255.255.255.224でブロックサイズ32のため、サブネットは0,32,64,96...と続きます。65は64〜95の範囲に含まれるため、ネットワークアドレスは192.168.10.64です。他の選択肢は隣接する別サブネットのアドレスであり誤りです。"}, {"id": "np-c-007", "domain": "concepts", "q": "複数の拠点をインターネット経由で仮想的に接続し、集中管理された制御プレーンでトラフィック経路を動的に最適化する技術はどれか。", "choices": ["MPLS", "SD-WAN", "VLAN", "VPC"], "answer": 1, "explanation": "正解はSD-WAN(Software-Defined WAN)。ソフトウェア制御によりWAN回線(インターネット、MPLS等)を仮想的に束ね、アプリケーションの重要度に応じて経路を動的に選択できます。MPLSは従来型の専用線技術、VLANはLAN内の論理的な分割技術、VPCはクラウド内の仮想ネットワークであり、いずれも設問の説明とは異なります。"}, {"id": "np-c-008", "domain": "concepts", "q": "ツイストペアケーブルの規格のうち、10GBASE-Tを最長100mでサポートするカテゴリはどれか。", "choices": ["Cat5e", "Cat6", "Cat6a", "Cat3"], "answer": 2, "explanation": "正解はCat6a。10Gbpsを100mの距離で安定してサポートするために策定されました。Cat6は10Gbpsに対応できますが、外部ノイズ(エイリアンクロストーク)の影響で距離が最大55m程度に制限されます。Cat5eは最大1Gbps(条件次第で2.5Gbps)まで、Cat3は音声通話向けの旧規格で高速データ通信には非対応です。"}, {"id": "np-c-009", "domain": "concepts", "q": "ネットワーク機器の設定をコード(定義ファイル)として管理し、再現性のある形で自動的に展開する考え方はどれか。", "choices": ["Infrastructure as Code (IaC)", "Zero Trust", "SASE", "QoS"], "answer": 0, "explanation": "正解はIaC(Infrastructure as Code)。インフラの構成をコードで定義し、バージョン管理や自動デプロイを可能にする考え方です。Zero Trustは「暗黙の信頼を排除する」セキュリティモデル、SASEはネットワークとセキュリティ機能をクラウドから統合提供するアーキテクチャ、QoSは帯域や優先度を制御する技術であり、いずれもコードによる構成管理とは異なる概念です。"}, {"id": "np-c-010", "domain": "concepts", "q": "1本の物理リンクを論理的に複数のVLANトラフィックが通過できるようにする技術はどれか。", "choices": ["トランキング(802.1Q)", "スパニングツリー(802.1D)", "リンクアグリゲーション(802.3ad)", "ポートミラーリング"], "answer": 0, "explanation": "正解はトランキング(802.1Qタグ付け)。1本の物理リンク上で複数VLANのフレームをタグで識別し伝送します。スパニングツリーはループ防止のためのプロトコル、リンクアグリゲーションは複数の物理リンクを束ねて帯域と冗長性を確保する技術、ポートミラーリングは監視のためにあるポートのトラフィックを別ポートへ複製する機能であり、いずれもVLANの多重化とは異なります。"}, {"id": "np-c-011", "domain": "concepts", "q": "データセンター内の通信のうち、サーバー間(東西方向)のトラフィックを指す用語はどれか。", "choices": ["North-Southトラフィック", "East-Westトラフィック", "アップストリームトラフィック", "ブロードキャストトラフィック"], "answer": 1, "explanation": "正解はEast-West(東西)トラフィック。データセンター内のサーバー間通信を指します。North-South(南北)トラフィックはデータセンターの内外(クライアントとサーバー間など)を出入りする通信を指し、対比される用語です。アップストリームは上位ネットワークへの通信方向、ブロードキャストは特定の宛先範囲全体への送信方式を指す用語であり、設問の定義とは異なります。"}, {"id": "np-c-012", "domain": "concepts", "q": "公衆インターネットを使わず、通信事業者が提供する専用の閉域網でラベルに基づき高速に転送を行うWAN技術はどれか。", "choices": ["MPLS", "DSL", "SD-WAN", "GPON"], "answer": 0, "explanation": "正解はMPLS(Multiprotocol Label Switching)。ラベルを付与してパケットを高速に転送する、事業者が提供する閉域網技術です。DSLは電話回線を使ったアクセス回線技術、SD-WANは複数回線を仮想的に束ねるソフトウェア制御技術(インターネット回線上でも構築可能)、GPONは光ファイバーによる加入者アクセス技術であり、いずれもMPLSの定義とは異なります。"}, {"id": "np-i-001", "domain": "implementation", "q": "複数のVLAN間でルーティングを行うために、1本のトランクポートで複数の論理インターフェースを構成する構成方式はどれか。", "choices": ["Router-on-a-Stick", "スタティックルーティング", "デフォルトゲートウェイ", "NATオーバーロード"], "answer": 0, "explanation": "正解はRouter-on-a-Stick。1本の物理インターフェースをトランクポートとし、VLANごとのサブインターフェースを作成してVLAN間ルーティングを実現する構成です。スタティックルーティングは手動で経路を設定する方式全般、デフォルトゲートウェイは自ネットワーク外への転送先を指す設定値、NATオーバーロード(PAT)はアドレス変換の一種であり、いずれもVLAN間ルーティングの構成方式そのものを指す用語ではありません。"}, {"id": "np-i-002", "domain": "implementation", "q": "スパニングツリープロトコル(STP)の主な目的はどれか。", "choices": ["帯域幅を増やすこと", "冗長パスによるループの発生を防ぐこと", "IPアドレスを自動割り当てすること", "暗号化通信を実現すること"], "answer": 1, "explanation": "正解は冗長パスによるループの発生を防ぐこと。STPは冗長構成のスイッチネットワークで一部のポートをブロッキング状態にし、ブロードキャストストームなどのループを防止します。帯域幅の増加はリンクアグリゲーションの役割、IPアドレスの自動割り当てはDHCPの役割、暗号化通信はTLSやIPsecなどの役割であり、STPの目的とは異なります。"}, {"id": "np-i-003", "domain": "implementation", "q": "1つのグローバルIPアドレスで複数の内部ホストが同時にインターネット通信できるようにする技術はどれか。", "choices": ["スタティックNAT", "PAT(NATオーバーロード)", "ダイナミックNAT", "DNAT"], "answer": 1, "explanation": "正解はPAT(Port Address Translation、NATオーバーロード)。ポート番号を使って1つのグローバルIPアドレスを複数の内部ホストで共有します。スタティックNATは1対1の固定変換、ダイナミックNATはグローバルアドレスのプールから都度1対1で割り当てる方式(同時接続数はプール数に制限される)、DNAT(宛先NAT)は外部から内部サーバーへのアクセスを実現する変換であり、いずれも多数対1の同時共有を実現するものではありません。"}, {"id": "np-i-004", "domain": "implementation", "q": "WPA3で新たに採用され、オフライン辞書攻撃への耐性を高めた鍵交換方式はどれか。", "choices": ["4-way handshake", "SAE(Simultaneous Authentication of Equals)", "WEP", "TKIP"], "answer": 1, "explanation": "正解はSAE。パスワードを直接やり取りせずに鍵を確立する方式で、KRACK攻撃などWPA2の4-way handshakeが抱えていた脆弱性への対策として導入されました。4-way handshakeはWPA2で使われていた方式そのもの、WEPは初期の脆弱な暗号方式、TKIPはWPA(第1世代)で使われた暗号方式であり、いずれもWPA3のSAEとは異なります。"}, {"id": "np-i-005", "domain": "implementation", "q": "経路情報を管理者が手動で設定するのではなく、ルーター同士が動的に交換し合う仕組みを持つプロトコルはどれか。", "choices": ["スタティックルーティング", "OSPF", "デフォルトルート", "ARP"], "answer": 1, "explanation": "正解はOSPF(Open Shortest Path First)。リンクステート型の動的ルーティングプロトコルで、ルーター間でトポロジ情報を交換し自動的に最短経路を計算します。スタティックルーティングとデフォルトルートはいずれも管理者が手動設定する経路情報です。ARPはIPアドレスからMACアドレスを解決するプロトコルであり、経路交換とは無関係です。"}, {"id": "np-i-006", "domain": "implementation", "q": "2.4GHz帯と5GHz帯を比較したとき、一般的に5GHz帯の特徴として正しいものはどれか。", "choices": ["障害物への透過性が高く到達距離が長い", "利用可能なチャンネル数が少なく干渉に弱い", "伝送速度は低いが到達距離が長い", "干渉が少なく高速通信に向くが到達距離は短い"], "answer": 3, "explanation": "正解は「干渉が少なく高速通信に向くが到達距離は短い」。5GHz帯は利用可能なチャンネル数が多く電子レンジ等との干渉が少ない一方、周波数が高いため壁などの障害物に弱く到達距離は短くなります。2.4GHz帯はその逆の特性(障害物に強く到達距離が長いが、チャンネル数が少なく干渉を受けやすい)を持つため、他の選択肢は2.4GHz帯の説明と混同したものです。"}, {"id": "np-i-007", "domain": "implementation", "q": "複数の物理NICを論理的に1本のリンクとして束ね、帯域増加と冗長性を両立させる技術はどれか。", "choices": ["リンクアグリゲーション(LACP)", "VRRP", "トランキング", "ポートセキュリティ"], "answer": 0, "explanation": "正解はリンクアグリゲーション(LACP: Link Aggregation Control Protocol)。複数の物理リンクを1つの論理リンクとして扱い、帯域の拡張と冗長性を実現します。VRRPはデフォルトゲートウェイを冗長化するプロトコル、トランキングは複数VLANを1本のリンクで運ぶ技術、ポートセキュリティは接続可能なMACアドレスを制限するセキュリティ機能であり、いずれも帯域の束ね上げを目的としたものではありません。"}, {"id": "np-i-008", "domain": "implementation", "q": "サーバーの負荷を複数台に分散し、可用性とスケーラビリティを高める機器・機能はどれか。", "choices": ["ロードバランサー", "プロキシサーバー", "リピーター", "ブリッジ"], "answer": 0, "explanation": "正解はロードバランサー。複数のサーバーへリクエストを振り分けることで負荷分散と可用性向上を実現します。プロキシサーバーはクライアントに代わって通信を中継する機器、リピーターは信号を増幅・再生する物理層機器、ブリッジは異なるセグメントを接続するデータリンク層機器であり、いずれも負荷分散を主目的とした機器ではありません。"}, {"id": "np-i-009", "domain": "implementation", "q": "複数の拠点間でIPネットワーク経由の暗号化トンネルを構築し、あたかも同一ネットワークにいるかのように通信できるようにする技術はどれか。", "choices": ["サイト間VPN", "VLAN", "NAT", "QoS"], "answer": 0, "explanation": "正解はサイト間VPN(Site-to-Site VPN)。拠点間に暗号化トンネルを構築し、離れた拠点同士を安全に接続します。VLANは単一の物理ネットワーク内を論理分割する技術、NATはアドレス変換技術、QoSは帯域や優先度を制御する技術であり、いずれも拠点間の暗号化トンネル接続そのものを指す用語ではありません。"}, {"id": "np-o-001", "domain": "operations", "q": "ネットワーク機器から発生するイベントログを一元的に収集・保存するために広く使われるプロトコルはどれか。", "choices": ["Syslog", "SNMP", "NetFlow", "ICMP"], "answer": 0, "explanation": "正解はSyslog。機器で発生したイベントやエラーメッセージを標準化された形式で集約サーバーへ送信するためのプロトコルです。SNMPは機器の状態値を取得・監視するためのプロトコル、NetFlowはトラフィックのフロー統計情報を収集する技術、ICMPはping等で使われる制御メッセージ用プロトコルであり、いずれもログの一元収集を主目的としたものではありません。"}, {"id": "np-o-002", "domain": "operations", "q": "ネットワーク機器の状態や統計情報を、管理ステーションがポーリングして取得するプロトコルはどれか。", "choices": ["SNMP", "TFTP", "SIP", "LDAP"], "answer": 0, "explanation": "正解はSNMP(Simple Network Management Protocol)。MIBと呼ばれる管理情報ベースを通じて機器のCPU使用率やインターフェース状態などを取得・監視します。TFTPはファイル転送プロトコル、SIPはVoIPの呼制御プロトコル、LDAPはディレクトリサービスへのアクセスプロトコルであり、いずれも機器監視を目的としたものではありません。"}, {"id": "np-o-003", "domain": "operations", "q": "ある回線について、実際に転送できたデータ量を測定した際に得られる指標はどれか。", "choices": ["帯域幅(Bandwidth)", "スループット(Throughput)", "レイテンシ(Latency)", "ジッター(Jitter)"], "answer": 1, "explanation": "正解はスループット。実際に転送できた実効データ量を指します。帯域幅は回線が理論上持つ最大容量、レイテンシは信号が送信元から宛先に届くまでの遅延時間、ジッターはパケット到着間隔のばらつきを指す指標であり、いずれも実測転送量そのものを指す用語ではありません。"}, {"id": "np-o-004", "domain": "operations", "q": "障害復旧計画において、システム停止から業務再開までに許容される最大時間を示す指標はどれか。", "choices": ["RTO(目標復旧時間)", "RPO(目標復旧時点)", "MTBF(平均故障間隔)", "SLA(サービスレベル合意)"], "answer": 0, "explanation": "正解はRTO(Recovery Time Objective)。障害発生から業務を再開するまでに許容できる最大時間を示します。RPOはどの時点のデータまで復旧できればよいかを示すデータ損失許容量の指標、MTBFは故障が発生するまでの平均稼働時間を示す信頼性指標、SLAは提供者と利用者間で合意したサービス品質基準であり、いずれも「復旧までの許容時間」そのものを表す指標ではありません。"}, {"id": "np-o-005", "domain": "operations", "q": "現用系に障害が発生した際、待機系に自動的に切り替えて処理を継続させる仕組みを指す用語はどれか。", "choices": ["フェイルオーバー", "ロードバランシング", "スケールアウト", "デデュプリケーション"], "answer": 0, "explanation": "正解はフェイルオーバー。現用系(アクティブ)の障害を検知し、待機系(スタンバイ)に自動的に処理を引き継ぐ仕組みです。ロードバランシングは正常時の負荷分散、スケールアウトはサーバー台数を増やして処理能力を拡張する手法、デデュプリケーションは重複データを排除してストレージ容量を削減する技術であり、いずれも障害時の自動切り替えを指すものではありません。"}, {"id": "np-o-006", "domain": "operations", "q": "ネットワーク変更管理のプロセスにおいて、変更を実施する前に必ず作成しておくべき文書はどれか。", "choices": ["ロールバック(切り戻し)手順書", "マーケティング資料", "給与明細", "顧客満足度調査票"], "answer": 0, "explanation": "正解はロールバック手順書。変更が失敗した場合に元の状態へ安全に戻すための手順をあらかじめ用意しておくことが変更管理のベストプラクティスです。他の選択肢はネットワーク変更管理と無関係な文書です。"}, {"id": "np-o-007", "domain": "operations", "q": "ネットワークの構成情報や資産情報を継続的に記録し、変更履歴を追跡できるようにしたドキュメントはどれか。", "choices": ["ネットワークベースライン/構成管理台帳", "広告掲載計画書", "採用選考基準書", "接待交際費規程"], "answer": 0, "explanation": "正解はネットワークベースライン/構成管理台帳。正常時の構成や性能を記録しておくことで、異常発生時の比較対象や変更履歴の追跡に利用します。他の選択肢はネットワーク運用ドキュメントとは無関係です。"}, {"id": "np-o-008", "domain": "operations", "q": "ネットワーク機器のファームウェアやOSに定期的にパッチを適用する運用上の主な目的はどれか。", "choices": ["既知の脆弱性を修正し安定性とセキュリティを維持するため", "回線速度を物理的に向上させるため", "IPアドレス体系を自動的に変更するため", "電力消費を完全にゼロにするため"], "answer": 0, "explanation": "正解は「既知の脆弱性を修正し安定性とセキュリティを維持するため」。パッチ適用はソフトウェアの不具合やセキュリティホールを修正する運用上重要な作業です。物理的な回線速度の向上、IPアドレス体系の自動変更、消費電力のゼロ化はパッチ適用によって実現されるものではありません。"}, {"id": "np-s-001", "domain": "security", "q": "「いかなる通信も暗黙的に信頼せず、都度検証する」という考え方に基づくセキュリティモデルはどれか。", "choices": ["ゼロトラスト", "境界防御(ペリメータセキュリティ)", "多層防御", "ハニーポット"], "answer": 0, "explanation": "正解はゼロトラスト。社内/社外の区別なく、すべてのアクセスを都度検証・認可する考え方です。境界防御はネットワークの内と外の境界にセキュリティを集中させる従来型モデル、多層防御は複数の防御層を重ねる考え方全般、ハニーポットは攻撃者をおびき寄せ観察するための囮システムであり、いずれもゼロトラストの定義そのものとは異なります。"}, {"id": "np-s-002", "domain": "security", "q": "利用者の認証・認可・利用状況の記録をまとめて指す略語はどれか。", "choices": ["AAA", "CIA", "DMZ", "VPN"], "answer": 0, "explanation": "正解はAAA(Authentication, Authorization, Accounting)。認証、認可、アカウンティング(利用記録)の3要素を指します。CIAは機密性・完全性・可用性を表すセキュリティの基本原則、DMZは非武装地帯と呼ばれる緩衝ネットワーク領域、VPNは暗号化された仮想プライベート通信路であり、いずれもAAAとは異なる用語です。"}, {"id": "np-s-003", "domain": "security", "q": "攻撃者が偽のARP応答を送信し、通信を自分経由に迂回させて盗聴する攻撃はどれか。", "choices": ["ARPポイズニング", "DNSスプーフィング", "VLANホッピング", "ブルートフォース攻撃"], "answer": 0, "explanation": "正解はARPポイズニング(ARPスプーフィング)。偽のARP応答でMACアドレステーブルを汚染し、中間者攻撃(MITM)を成立させます。DNSスプーフィングは偽のDNS応答で名前解決結果を改ざんする攻撃、VLANホッピングはタグ操作等でVLANの境界を越えてアクセスする攻撃、ブルートフォース攻撃は総当たりでパスワードを割り出す攻撃であり、いずれもARP応答の偽装とは異なる手口です。"}, {"id": "np-s-004", "domain": "security", "q": "インターネットと社内ネットワークの間に設置し、外部に公開するサーバーを配置する緩衝領域はどれか。", "choices": ["DMZ", "VLAN", "VPN", "NAT"], "answer": 0, "explanation": "正解はDMZ(非武装地帯)。外部公開サーバーを社内LANとは別のセグメントに置き、万一侵害されても内部ネットワークへの影響を最小化します。VLANは論理的なLAN分割技術全般、VPNは暗号化通信路、NATはアドレス変換技術であり、いずれも「外部公開用の緩衝ネットワーク領域」そのものを指す用語ではありません。"}, {"id": "np-s-005", "domain": "security", "q": "スイッチのポートごとに接続を許可するMACアドレス数や特定のMACアドレスを制限する機能はどれか。", "choices": ["ポートセキュリティ", "スパニングツリー", "QoS", "リンクアグリゲーション"], "answer": 0, "explanation": "正解はポートセキュリティ。特定ポートに接続できる端末のMACアドレスを制限し、不正な機器の接続を防止します。スパニングツリーはループ防止機能、QoSは帯域や優先度の制御機能、リンクアグリゲーションは複数リンクの束ね上げ機能であり、いずれもMACアドレスベースの接続制限機能ではありません。"}, {"id": "np-s-006", "domain": "security", "q": "RADIUSとTACACS+を比較した記述として正しいものはどれか。", "choices": ["RADIUSはTCPを使用し、TACACS+はUDPを使用する", "RADIUSは認証と認可を1つのプロセスにまとめ、TACACS+は認証・認可・アカウンティングを分離して処理できる", "RADIUSはCisco独自のプロトコルであり、TACACS+は標準プロトコルである", "RADIUSは暗号化されず、TACACS+はペイロード全体を暗号化しない"], "answer": 1, "explanation": "正解は「RADIUSは認証と認可を1つのプロセスにまとめ、TACACS+は認証・認可・アカウンティングを分離して処理できる」。TACACS+はAAAの各機能を独立して制御できる柔軟性が特徴です。実際にはRADIUSがUDP、TACACS+がTCPを使用するため選択肢1は逆であり誤りです。TACACS+こそがCisco独自開発のプロトコルであるため選択肢3も誤りです。またTACACS+はペイロード全体を暗号化しますが、RADIUSはパスワード部分のみ暗号化し全体は暗号化しないため選択肢4も誤りです。"}, {"id": "np-s-007", "domain": "security", "q": "大量のリクエストを送りつけてサーバーやネットワーク帯域を枯渇させ、正規利用者がサービスを利用できなくする攻撃はどれか。", "choices": ["DoS/DDoS攻撃", "フィッシング", "マルウェア感染", "ソーシャルエンジニアリング"], "answer": 0, "explanation": "正解はDoS/DDoS攻撃(サービス拒否攻撃/分散型サービス拒否攻撃)。大量のトラフィックやリクエストでリソースを枯渇させ可用性を侵害します。フィッシングは偽の通信で認証情報等を騙し取る攻撃、マルウェア感染は悪意あるソフトウェアによる侵害全般、ソーシャルエンジニアリングは人間の心理的な隙を突く攻撃手法であり、いずれも可用性の直接的な枯渇を狙う攻撃とは性質が異なります。"}, {"id": "np-s-008", "domain": "security", "q": "サーバールームへの入退室において、正規利用者に続いて無許可の人物が扉をすり抜けて侵入する物理的な攻撃手法はどれか。", "choices": ["テールゲーティング(共連れ)", "ショルダーサーフィン", "ピギーバッキングの逆(誰も伴わず単独侵入)", "スキミング"], "answer": 0, "explanation": "正解はテールゲーティング(共連れ)。認証を受けた人物のすぐ後ろに続いて、認証なしで入室する物理的な侵入手法です。ショルダーサーフィンは肩越しにパスワード入力等を盗み見る手法、スキミングはカード情報を不正に読み取る手法であり、いずれも共連れによる物理侵入とは異なります。なお「ピギーバッキング」はテールゲーティングとほぼ同義で使われる用語であり、選択肢3の説明(単独侵入)はその定義と矛盾するため誤りです。"}, {"id": "np-s-009", "domain": "security", "q": "ファイアウォールにおいて、通信の状態(セッション)を記憶し、そのセッションに関連する応答パケットのみを通過させる方式はどれか。", "choices": ["ステートフルインスペクション", "パケットフィルタリング(ステートレス)", "プロキシフィルタリング単体", "URLフィルタリングのみ"], "answer": 0, "explanation": "正解はステートフルインスペクション。通信セッションの状態を保持し、確立済みセッションに対応する戻りパケットのみを許可することで、より安全な制御を実現します。パケットフィルタリング(ステートレス)はパケット単位でルールを照合するのみでセッション状態を保持しません。プロキシフィルタリング単体やURLフィルタリングのみでは、セッション状態に基づく通信制御という設問の要件を満たしません。"}, {"id": "np-s-010", "domain": "security", "q": "攻撃者が二重にVLANタグを付与したフレームを送信し、本来到達できないはずの別VLANへ通信を届かせる攻撃はどれか。", "choices": ["ダブルタギングによるVLANホッピング", "MACフラッディング", "ルーティングテーブルポイズニング", "ゾンビ化(ボット化)"], "answer": 0, "explanation": "正解はダブルタギングによるVLANホッピング。ネイティブVLANの設定を悪用し、外側のタグが除去された後に内側のタグで別VLANへフレームを到達させる攻撃です。MACフラッディングはスイッチのMACアドレステーブルを溢れさせてハブのようにブロードキャストさせる攻撃、ルーティングテーブルポイズニングは経路情報を汚染する攻撃、ゾンビ化はマルウェア感染により端末が攻撃者の指令下に置かれる状態を指し、いずれもVLANタグの二重付与による境界越えとは異なる手口です。"}, {"id": "np-t-001", "domain": "troubleshooting", "q": "CompTIAが定めるネットワークトラブルシューティング方法論において、最初に行うべきステップはどれか。", "choices": ["問題を特定する", "解決策を実施する", "理論を検証する", "解決後の動作を確認する"], "answer": 0, "explanation": "正解は「問題を特定する」。7ステップの方法論は、1.問題の特定 2.推定原因の理論構築 3.理論の検証 4.対処計画の策定 5.解決策の実施 6.全体動作の確認 7.文書化、という順序で進みます。他の選択肢はいずれも後続のステップであり、最初に行うべき作業ではありません。"}, {"id": "np-t-002", "domain": "troubleshooting", "q": "あるホストから宛先までの経路上の各ホップと、それぞれの遅延を確認するために使うコマンドはどれか。", "choices": ["ping", "tracert/traceroute", "nslookup", "ipconfig"], "answer": 1, "explanation": "正解はtracert(Windows)/traceroute(Linux/macOS)。宛先までの各中継ルーター(ホップ)とその区間の遅延を表示します。pingは特定の宛先への到達性と往復遅延のみを確認するコマンド、nslookupは名前解決(DNS問い合わせ)を行うコマンド、ipconfigは自ホストのネットワーク設定を表示するコマンドであり、いずれも経路上の各ホップを表示するものではありません。"}, {"id": "np-t-003", "domain": "troubleshooting", "q": "あるPCが自動的に「169.254.x.x」のIPアドレスを取得している場合、最も疑われる原因はどれか。", "choices": ["DHCPサーバーからアドレスを取得できなかった(APIPA)", "DNSサーバーが停止している", "デフォルトゲートウェイの設定ミス", "MTUサイズの不一致"], "answer": 0, "explanation": "正解はDHCPサーバーからアドレスを取得できなかったことによるAPIPA(自動プライベートIPアドレッシング)。169.254.0.0/16はDHCP応答が得られない場合にWindows等が自動的に割り当てる特殊なアドレス範囲です。DNS停止では名前解決ができなくなりますがIPアドレス自体はDHCPで正常に取得できます。デフォルトゲートウェイの設定ミスやMTUの不一致は、IPアドレス自体は正常に割り当てられた上で発生する別種の通信不良であり、APIPAの直接的な原因とはなりません。"}, {"id": "np-t-004", "domain": "troubleshooting", "q": "銅線ケーブルの配線において、両端でピン配列の対応が正しくない(規格通りに結線されていない)不良を指す用語はどれか。", "choices": ["ミスワイヤ(誤結線)", "オープン(断線)", "ショート(短絡)", "減衰(アッテネーション)"], "answer": 0, "explanation": "正解はミスワイヤ(誤結線)。ピンの対応関係が規格(T568A/B等)と異なる状態で、split pairなどもこの一種です。オープンは導線が途中で切れている状態、ショートは異なる導線同士が接触している状態、減衰は信号が距離とともに弱くなる現象であり、いずれもピン配列の誤りそのものを指す用語ではありません。"}, {"id": "np-t-005", "domain": "troubleshooting", "q": "無線LANにおいて、同一チャンネルを複数のアクセスポイントが使用していることが原因で発生しやすい問題はどれか。", "choices": ["電波干渉によるスループット低下", "IPアドレスの重複", "DNSキャッシュの汚染", "証明書の期限切れ"], "answer": 0, "explanation": "正解は電波干渉によるスループット低下(チャンネルオーバーラップ/co-channel interference)。同一チャンネルの利用が集中すると衝突や干渉が増えパフォーマンスが低下します。IPアドレスの重複はDHCPやスタティック設定の誤りが原因、DNSキャッシュの汚染は名前解決に関する問題、証明書の期限切れはTLS通信に関する問題であり、いずれも無線チャンネルの競合とは異なる原因です。"}, {"id": "np-t-006", "domain": "troubleshooting", "q": "特定のドメイン名に対する名前解決の結果を確認・調査する際に最も適したコマンドはどれか。", "choices": ["nslookup/dig", "tracert", "arp -a", "netstat"], "answer": 0, "explanation": "正解はnslookup(Windows)/dig(Linux/macOS)。指定したドメインに対するDNS問い合わせを行い、返却されるレコードを確認できます。tracertは経路上のホップを調べるコマンド、arp -aはローカルのARPテーブル(IP-MACの対応)を表示するコマンド、netstatはローカルの通信接続状況やポートの使用状況を表示するコマンドであり、いずれもDNS名前解決の調査には直接使用しません。"}, {"id": "np-t-007", "domain": "troubleshooting", "q": "ネットワーク経路上でMTUサイズが不一致な区間を通過する際に発生しやすい問題はどれか。", "choices": ["大きいパケットの断片化やドロップによる通信不良", "IPアドレスの自動割り当て失敗", "スイッチのループ発生", "証明書のチェーン検証エラー"], "answer": 0, "explanation": "正解は大きいパケットの断片化やドロップによる通信不良。経路上でMTUより大きいパケットがDFビット(Don't Fragment)付きで送られると、断片化できずにドロップされ通信が不安定になります(ブラックホール現象)。IPアドレスの自動割り当て失敗はDHCPの問題、スイッチのループはSTPに関連する問題、証明書のチェーン検証エラーはPKIに関する問題であり、いずれもMTU不一致とは異なる原因です。"}, {"id": "np-t-008", "domain": "troubleshooting", "q": "ケーブルの長さが規格の上限を超えて延伸された場合に主に発生する物理層の問題はどれか。", "choices": ["信号減衰(アッテネーション)による通信品質の低下", "VLANタグの消失", "ルーティングループ", "DHCPスコープの枯渇"], "answer": 0, "explanation": "正解は信号減衰による通信品質の低下。ケーブル長が規格上限(例:銅線で100m)を超えると信号が弱まりエラー率が増加します。VLANタグの消失は設定・機器の問題、ルーティングループは経路制御の設定不備、DHCPスコープの枯渇はアドレスプール不足に起因する問題であり、いずれもケーブル長の超過による物理現象とは異なります。"}, {"id": "np-t-009", "domain": "troubleshooting", "q": "スイッチのポートでループが発生し、ブロードキャストストームによってネットワーク全体が停止した場合、根本原因の調査で確認すべき機能はどれか。", "choices": ["スパニングツリーが正しく有効化・動作しているか", "DNSラウンドロビンの設定", "NATのタイムアウト値", "証明書の失効リスト(CRL)"], "answer": 0, "explanation": "正解はスパニングツリーが正しく有効化・動作しているかの確認。STPが無効化されていたり誤設定されていたりするとループが検知されずブロードキャストストームが発生します。DNSラウンドロビンは負荷分散に関する設定、NATのタイムアウト値はアドレス変換テーブルの保持時間、CRLは証明書失効の確認に使うリストであり、いずれもループ・ブロードキャストストームの原因究明には直接関係しません。"}, {"id": "np-t-010", "domain": "troubleshooting", "q": "特定のホストの通信が拒否される問題を調査する際、経路上のどのファイアウォールルールが適用されているかを確認する以外に、ローカルホスト側で確認すべき代表的な項目はどれか。", "choices": ["ホストファイアウォール(OS側)のルールとポート状態", "電源ケーブルの色", "モニターの解像度設定", "キーボードのレイアウト設定"], "answer": 0, "explanation": "正解はホストファイアウォール(OS側)のルールとポート状態の確認。ネットワーク機器側のルールが正しくても、OS側のファイアウォールで該当ポートがブロックされていれば通信は失敗します。電源ケーブルの色、モニターの解像度、キーボードレイアウトはネットワーク通信の可否とは無関係です。"}, {"id": "np-t-011", "domain": "troubleshooting", "q": "自ホストが持つARPテーブルの内容(IPアドレスとMACアドレスの対応表)を確認するコマンドはどれか。", "choices": ["arp -a", "ping -a", "tracert -a", "ipconfig -a"], "answer": 0, "explanation": "正解は「arp -a」。ローカルホストが保持しているARPキャッシュ(IPアドレスとMACアドレスの対応表)を一覧表示します。ping、tracert、ipconfigにはそれぞれ用途に応じたオプションがありますが、「-a」オプションでARPテーブルを表示する機能はarpコマンド固有のものであり、他のコマンドの-aオプションはARPテーブル表示とは異なる動作(ipconfigの/allに近い詳細表示など、コマンド・OSによって意味が異なる)をします。"}, {"id": "np-h-001", "domain": "concepts", "type": "single", "q": "ある企業は15拠点を接続する必要があり、拠点ごとの構成投入時間を短縮しつつ、アプリケーションの重要度に応じてブロードバンド回線とMPLS回線を動的に使い分けたいと考えている。最も適した技術はどれか。", "choices": ["各拠点にMPLS専用線を追加増設する", "拠点間をフルメッシュのIPsecサイト間VPNのみで接続する", "SD-WANを導入し集中管理された制御プレーンで経路を最適化する", "全拠点のスパニングツリー設計を見直す"], "answer": 2, "explanation": "正解はSD-WAN。集中管理されたソフトウェア制御により複数種類の回線を仮想的に束ね、アプリケーションごとに最適な経路を動的に選択でき、拠点への展開も迅速です。MPLS専用線の追加はコストと構成投入時間が増大するため要件に反します。フルメッシュVPNのみでは経路の動的最適化ができません。スパニングツリーはL2のループ防止技術であり、WAN回線の動的選択とは無関係です。"}, {"id": "np-h-002", "domain": "concepts", "type": "single", "q": "4つの部署にそれぞれ最大50台のホストを収容できるサブネットを、無駄なアドレス消費を抑えつつ割り当てたい。各部署に割り当てるべき最小のプレフィックス長はどれか。", "choices": ["/24(254ホスト)", "/25(126ホスト)", "/26(62ホスト)", "/27(30ホスト)"], "answer": 2, "explanation": "正解は/26。/26は2^6-2=62ホストを収容でき、50台という要件を満たす最小サイズです。/27は30ホストしか収容できず要件を満たしません。/24や/25は要件を満たしますが、必要以上に大きくアドレスを無駄に消費するため「無駄を抑える」という条件には適しません。"}, {"id": "np-h-003", "domain": "concepts", "type": "single", "q": "社内システムをIPv6へ移行する過程で、IPv6のみで稼働する新しいクライアント群から、まだIPv4のみにしか対応していないレガシーサーバー群へ通信させたい。最も適した仕組みはどれか。", "choices": ["NAT64", "6to4トンネリング", "デュアルスタック構成をクライアントに追加する", "Teredo"], "answer": 0, "explanation": "正解はNAT64。IPv6のみのホストからIPv4のみの宛先への通信を、アドレス変換によって仲介する仕組みです。6to4はIPv4網上でIPv6パケットをトンネリングする技術で、宛先がIPv4専用サーバーである今回の要件には合いません。デュアルスタックはホスト自体に両方のスタックを持たせる方式であり、クライアントがIPv6のみという前提と矛盾します。Teredoはクライアント側でIPv4 NAT越しにIPv6接続性を得るための技術であり、サーバー側がIPv4専用という状況への対応策ではありません。"}, {"id": "np-h-004", "domain": "concepts", "type": "single", "q": "複数の医療機関が共同で出資し、共通の regulatory要件を満たすために専用に構築・共有するクラウド環境の形態はどれか。", "choices": ["パブリッククラウド", "プライベートクラウド", "コミュニティクラウド", "ハイブリッドクラウド"], "answer": 2, "explanation": "正解はコミュニティクラウド。共通の目的や規制要件を持つ複数組織が共同で利用・出資する専用クラウド環境です。パブリッククラウドは不特定多数の利用者向け、プライベートクラウドは単一組織専用、ハイブリッドクラウドは複数のクラウド形態を組み合わせた構成であり、いずれも「複数組織が共同で専用に構築」という条件には合致しません。"}, {"id": "np-h-005", "domain": "concepts", "type": "single", "q": "SD-WANによる回線の動的選択に加え、クラウドから配信されるファイアウォールやCASBなどのセキュリティ機能を統合的に提供するアーキテクチャはどれか。", "choices": ["SASE", "VPNコンセントレータ", "MPLS単体", "スタティックルーティング"], "answer": 0, "explanation": "正解はSASE(Secure Access Service Edge)。SD-WANのネットワーク機能と、クラウド提供のセキュリティ機能(ファイアウォール、CASB、ゼロトラストアクセス等)を統合したアーキテクチャです。VPNコンセントレータは複数VPN接続を集約する機器、MPLS単体は回線技術、スタティックルーティングは経路設定方式であり、いずれもセキュリティ機能の統合提供という定義には当たりません。"}, {"id": "np-h-006", "domain": "implementation", "type": "single", "q": "2台のスイッチを接続した際、片方のポートで速度・デュプレックスを自動検出(オートネゴシエーション)に設定し、もう片方を100Mbps/全二重に固定設定したところ、通信エラーが多発した。原因として最も可能性が高いものはどれか。", "choices": ["速度/デュプレックスの不一致(ミスマッチ)", "スパニングツリーの誤設定", "VLANタグ付けの不一致", "MACアドレステーブルの溢れ"], "answer": 0, "explanation": "正解は速度/デュプレックスの不一致。片方を自動検出、もう片方を固定設定にすると、オートネゴシエーション側が正しく相手の設定を検知できずデュプレックスの不一致(片方が全二重、もう片方が半二重と誤認識)が発生し、エラーやコリジョンが多発します。ベストプラクティスは両側を同じ設定(通常は両側オートネゴシエーション)にすることです。スパニングツリーの誤設定はループに関する問題、VLANタグの不一致はトランクポートでの通信断、MACアドレステーブルの溢れはスイッチの学習テーブル枯渇に関する問題であり、いずれも速度/デュプレックス不一致の症状とは異なります。"}, {"id": "np-h-007", "domain": "implementation", "type": "single", "q": "新規拠点のルーターやスイッチを、テンプレート化された構成ファイルとバージョン管理システムを用いて自動的に展開し、人手による個別設定を最小化したい。最も適した手法はどれか。", "choices": ["Infrastructure as Code (IaC)による自動プロビジョニング", "SNMPによる定期ポーリング", "Telnet経由での個別CLIスクリプト実行", "Syslogサーバーへのログ集約"], "answer": 0, "explanation": "正解はIaCによる自動プロビジョニング。構成をコードとして管理しバージョン管理システムで履行することで、再現性のある自動展開を実現します。SNMPポーリングは監視、Telnet経由の個別スクリプト実行は自動化の度合いが低く暗号化もされない手法、Syslog集約はログ管理であり、いずれも「テンプレート化された自動展開」そのものを実現する手法ではありません。"}, {"id": "np-h-008", "domain": "implementation", "type": "multi", "q": "冗長構成の2台のスイッチ間でパケットロスと高レイテンシが発生しており、技術者はスパニングツリーの誤設定によりループが断続的に発生していると推測している。この推測を検証・解消するために取るべき行動を2つ選べ。", "choices": ["ルートブリッジの優先度設定を確認する", "MTUサイズを増やしジャンボフレームを有効化する", "スイッチログでBPDU Guardの違反発生を確認する", "ケーブルをすべて新品に交換する", "有線LANの帯域幅を2倍に増強する"], "answer": [0, 2], "explanation": "正解はルートブリッジの優先度設定の確認と、BPDU Guard違反ログの確認です。ルートブリッジの選出や優先度設定に誤りがあると想定した経路がブロックされずループが発生する可能性があり、また不正なBPDUを受信したポートがBPDU Guardによってシャットダウンされていないかのログ確認は、ループの発生源を特定する直接的な手がかりになります。ジャンボフレームの有効化はスループット向上を目的とした設定でループ対策とは無関係です。ケーブル交換は物理層の障害を疑う対応であり、STP誤設定の検証にはなりません。帯域幅の増強もループそのものの解消には寄与しません。"}, {"id": "np-h-009", "domain": "operations", "type": "single", "q": "重要な業務データベースについて、RTOを数分以内、RPOをほぼゼロに保つ必要があり、コストは二次的な考慮事項である。最も適した災害復旧サイトの構成はどれか。", "choices": ["コールドサイト", "ウォームサイト", "ホットサイト+リアルタイムレプリケーション", "週次のテープバックアップのみ"], "answer": 2, "explanation": "正解はホットサイト+リアルタイムレプリケーション。常時稼働状態の設備とリアルタイムのデータ複製により、数分以内の復旧とほぼゼロのデータ損失を実現できます。コールドサイトとウォームサイトはいずれも復旧までに時間がかかり要件を満たしません。週次テープバックアップでは最大1週間分のデータ損失が発生する可能性があり、RPOほぼゼロの要件を大きく下回ります。"}, {"id": "np-h-010", "domain": "operations", "type": "single", "q": "チームは、ディープパケットインスペクションを行わずに、アプリケーション単位でどの通信が帯域を多く消費しているか(トップトーカー)を把握したいと考えている。最も適したツール・技術はどれか。", "choices": ["NetFlow", "Syslog", "SNMPによるインターフェースカウンタ取得のみ", "全スイッチでのパケットキャプチャ"], "answer": 0, "explanation": "正解はNetFlow。フローごとの送受信元・ポート・プロトコル・バイト数などの統計情報を収集し、アプリケーションや通信相手ごとの帯域消費を把握できます。Syslogはイベントログの集約であり帯域統計には向きません。SNMPのインターフェースカウンタは物理ポート単位の集計値しか得られずフロー単位の内訳は分かりません。全スイッチでのパケットキャプチャは実現可能でも負荷が高く実務的ではありません。"}, {"id": "np-h-011", "domain": "operations", "type": "single", "q": "複数の物理ルーターで1つの仮想的なデフォルトゲートウェイIPアドレスを共有し、現用ルーターの障害時に自動的に待機ルーターへ切り替える仕組みはどれか。", "choices": ["VRRP(仮想ルーター冗長プロトコル)", "STP", "LACP", "DHCPリレー"], "answer": 0, "explanation": "正解はVRRP。複数のルーターで仮想IPアドレスを共有し、現用ルーターの障害時に待機ルーターが自動的にその役割を引き継ぎます。STPはL2のループ防止プロトコル、LACPは複数物理リンクの論理的な束ね上げプロトコル、DHCPリレーは異なるサブネットのDHCP要求を中継する機能であり、いずれもゲートウェイ冗長化そのものを実現する仕組みではありません。"}, {"id": "np-h-012", "domain": "security", "type": "single", "q": "あるワークステーションから、深夜帯に一定間隔で未知の外部IPアドレスへ低頻度・小容量の通信が発生していることが確認された。最も懸念すべき事象はどれか。", "choices": ["ボット/マルウェアによるC2サーバーへのビーコニング通信", "正規のWindows Update通信", "DNSゾーン転送", "通常のARPブロードキャスト"], "answer": 0, "explanation": "正解はC2(コマンド&コントロール)サーバーへのビーコニング通信。感染端末が一定間隔で外部の攻撃者インフラに生存確認や指令の取得を行う典型的な挙動です。Windows Updateは通常業務時間や特定のスケジュールに紐づく既知の宛先への通信であり、深夜の未知IPへの定期通信という特徴とは異なります。DNSゾーン転送はDNSサーバー間の同期通信であり一般のワークステーションでは発生しません。ARPブロードキャストは同一セグメント内のみに留まる通信であり外部への通信ではありません。"}, {"id": "np-h-013", "domain": "security", "type": "multi", "q": "過去にダブルタギングによるVLANホッピング攻撃が成立してしまったことが判明した。再発防止のために実施すべき設定変更を2つ選べ。", "choices": ["ネイティブVLANをVLAN1から変更し、明示的にタグ付けする", "すべてのポートでDTPによるトランクの自動ネゴシエーションを有効化する", "未使用ポートは利用されていない専用のVLANに割り当てる", "管理用VLANとネイティブVLANに同一のVLAN IDを使用する", "スイッチのファームウェアバージョン表示を無効化する"], "answer": [0, 2], "explanation": "正解は、ネイティブVLANをデフォルトのVLAN1から変更し明示的にタグ付けすること、および未使用ポートを利用されていない専用VLANに割り当てることです。ダブルタギング攻撃はデフォルトのネイティブVLANが外側タグとして扱われ除去されることを悪用するため、ネイティブVLANの変更とタグ付けの明示化が有効な対策になります。また未使用ポートを放置せず隔離用VLANに割り当てることで、不正な端末接続時の到達範囲を制限できます。DTPの自動ネゴシエーションを全ポートで有効化することは、スイッチ偽装によるトランクポート化(スイッチスプーフィング)を助長するため逆効果です。管理VLANとネイティブVLANを同一にすることもセキュリティ上望ましくありません。"}, {"id": "np-h-014", "domain": "security", "type": "single", "q": "セキュリティ監査の結果を受け、ファイアウォールルールの変更は必ず2名の承認を得てから適用することをルール化したい。この対策が示す原則はどれか。", "choices": ["職務分掌(Separation of Duties)/二人体制によるコントロール", "最小権限の原則単体", "ゼロトラスト単体", "多要素認証単体"], "answer": 0, "explanation": "正解は職務分掌(二人体制によるコントロール)。1人の担当者だけで重要な変更を完結させないようにし、不正または誤った変更のリスクを低減する統制です。最小権限の原則は個々のアカウントに必要最小限の権限のみを与える考え方、ゼロトラストは通信の都度検証を行う考え方、多要素認証は本人確認の強化策であり、いずれも「複数人の承認を必須化する」という統制そのものを指す用語ではありません。"}, {"id": "np-h-015", "domain": "troubleshooting", "type": "single", "q": "複数の利用者から「社内ファイルサーバーにIPアドレスでは接続できるが、サーバー名では接続できない」と報告された。他のサーバーへの名前接続には問題がない。最も可能性が高い原因はどれか。", "choices": ["そのファイルサーバーに関するDNSレコードが古い、または誤っている", "デフォルトゲートウェイの設定ミス", "スイッチポートのシャットダウン", "ケーブルの断線"], "answer": 0, "explanation": "正解は該当ファイルサーバーのDNSレコードの誤りまたは陳腐化。IPアドレスでの接続が正常であることから物理層・ネットワーク層の到達性は問題なく、名前解決(該当ホストのみ)に限定された問題であるため、そのサーバーに対応するDNSレコードの不備が最も疑われます。デフォルトゲートウェイの設定ミスやケーブルの断線であれば、IPアドレスでの接続自体も失敗するはずです。スイッチポートのシャットダウンでは通信自体が完全に不能になり、名前解決の失敗という限定的な症状にはなりません。"}, {"id": "np-h-016", "domain": "troubleshooting", "type": "single", "q": "あるオフィスで、空調(HVAC)設備が稼働する時間帯にだけ有線LAN通信のエラー率が上昇することが確認された。ケーブルを交換しても同じ時間帯に同様の問題が再発する。最も可能性が高い原因はどれか。", "choices": ["HVAC設備からの電磁干渉(EMI)", "DNSキャッシュの汚染", "IPアドレスの重複", "証明書の期限切れ"], "answer": 0, "explanation": "正解は電磁干渉(EMI)。空調設備の稼働時間帯に限定してエラーが発生し、ケーブル交換後も再発することから、ケーブル自体の劣化ではなく外部の電磁干渉源(HVACのモーターやコンプレッサーなど)がノイズの原因と考えられます。シールドケーブルへの変更や配線経路の見直しが対策になります。DNSキャッシュの汚染、IPアドレスの重複、証明書の期限切れはいずれも時間帯や空調の稼働と直接的な関連性がなく、この症状の説明としては不適切です。"}, {"id": "np-h-017", "domain": "troubleshooting", "type": "multi", "q": "建物内の特定エリアで無線LANの速度低下が報告されている。そのエリアは複数のアクセスポイントの電波が同一チャンネルで重なっており、また大きな金属製の装飾パネルが近くに設置されている。最も可能性が高い原因を2つ選べ。", "choices": ["同一チャンネルの重複によるコチャンネル干渉", "金属製パネルによるマルチパス(反射)干渉", "DNSサフィックスの設定誤り", "TLS証明書の期限切れ", "DHCPスコープの枯渇"], "answer": [0, 1], "explanation": "正解は同一チャンネルの重複によるコチャンネル干渉と、金属製パネルによる反射(マルチパス)干渉です。同一チャンネルを複数APが使用していると衝突や干渉が増加し、また金属などの反射しやすい素材が近くにあると電波が乱反射してマルチパスフェージングを引き起こし、実効速度が低下します。DNSサフィックスの誤り、TLS証明書の期限切れ、DHCPスコープの枯渇はいずれも無線の物理的な電波環境とは無関係な問題です。"}, {"id": "np-h-018", "domain": "troubleshooting", "type": "single", "q": "新規に導入したスイッチを2本の冗長アップリンクでコア層に接続した直後、キャンパス全体でブロードキャストストームが発生した。調査したところ、1か月前のトラブルシューティング作業中にキャンパス全体でスパニングツリーが無効化されたままだったことが判明した。この状況に対する最も適切な対応はどれか。", "choices": ["スパニングツリーを再度有効化し、正しいルートブリッジ・優先度を再設定する", "冗長アップリンクの1本を永久に抜線したままにする", "すべてのVLANを1つに統合する", "コアスイッチを再起動するだけで様子を見る"], "answer": 0, "explanation": "正解はスパニングツリーの再有効化と適切な再設定。無効化されたままのSTPが、新たに追加された冗長リンクによるループを防止できなかったことがブロードキャストストームの根本原因であるため、STPを正しく復旧させることが本質的な解決策です。アップリンクを永久に抜線することは冗長性そのものを放棄することになり本来の設計目的を損ないます。VLANの統合はループの直接的な解決にはならず、むしろ影響範囲を広げる可能性があります。再起動のみではSTPが無効なままである限り再発を防げません。"}, {"id": "np-h-019", "domain": "implementation", "type": "single", "q": "複数台のWebサーバーへ処理を分散させる際、SSL/TLSのオフロード処理とURLパスに基づくコンテンツベースのルーティングを両方行いたい。適切な機器はどれか。", "choices": ["レイヤー7(アプリケーション層)ロードバランサー", "レイヤー4(トランスポート層)ロードバランサーのみ", "単純なDNSラウンドロビン", "L2スイッチのポートミラーリング機能"], "answer": 0, "explanation": "正解はレイヤー7ロードバランサー。アプリケーション層の情報(URLパスやHTTPヘッダーなど)を解析してルーティングでき、SSL/TLSのオフロード処理も行えます。レイヤー4ロードバランサーはIPアドレスとポート番号のみに基づいて振り分けるため、URLパスに基づくルーティングはできません。DNSラウンドロビンは単純な順番によるIP応答の切り替えに過ぎずコンテンツベースの制御はできません。ポートミラーリングは監視目的の機能であり負荷分散とは無関係です。"}, {"id": "np-h-020", "domain": "operations", "type": "single", "q": "SOC担当者が、社内の脆弱性スキャナーによる定期スキャン通信を、IDSが毎回「不審なポートスキャン」として大量に誤検知しアラートを出していることに気づいた。運用上最も適切な対応はどれか。", "choices": ["スキャナーの送信元IPからの当該シグネチャに限定して例外(チューニング)を設定する", "IDS自体を完全に停止する", "脆弱性スキャナーの運用を中止する", "すべてのポートスキャン検知シグネチャを無効化する"], "answer": 0, "explanation": "正解は、既知の正当な送信元・シグネチャに限定した例外設定によるチューニング。誤検知の原因を特定した上で、必要最小限の範囲でアラートを抑制し、他の脅威に対する検知能力は維持します。IDSの完全停止は他の攻撃に対する監視能力を失うため不適切です。脆弱性スキャナーの運用中止は本来の脆弱性管理業務を放棄することになります。すべてのポートスキャン検知を無効化すると、真の攻撃によるポートスキャンも検知できなくなり、過剰な対応です。"}, {"id": "np-d-001", "domain": "concepts", "type": "single", "q": "IPsecにおいて、ペイロードの暗号化による機密性と、完全性・認証の両方を提供するプロトコルはどれか。", "choices": ["ESP(Encapsulating Security Payload)", "AH(Authentication Header)", "IKE", "GRE"], "answer": 0, "explanation": "正解はESP。ペイロードを暗号化して機密性を提供しつつ、完全性・認証も併せて提供します。AHは完全性と認証のみを提供し、暗号化(機密性)は提供しません。IKEはIPsecの鍵交換に使われるプロトコル、GREはカプセル化のみを行い暗号化機能を持たないトンネリングプロトコルであり、いずれも「暗号化を含む機密性の提供」という点でESPとは異なります。"}, {"id": "np-d-002", "domain": "concepts", "type": "single", "q": "IT部門は10拠点すべてを相互接続するフルメッシュ構成を必要としている。個々のIPsecトンネルを手動で45本設定・管理する手間を避け、構成投入と運用の効率を高めたい。最も適したアプローチはどれか。", "choices": ["SD-WANオーバーレイによる動的なフルメッシュ構築", "すべての拠点間で個別にIPsecトンネルを手動設定する", "ハブアンドスポーク構成でハブ拠点経由の通信のみに限定する", "各拠点にスタティックルートを個別に追加する"], "answer": 0, "explanation": "正解はSD-WANオーバーレイ。集中管理されたコントローラーが拠点間のトンネルを動的に構築・管理するため、拠点数が増えても手動設定の手間が急増しません。個々のIPsecトンネルを手動設定する方法は拠点数の二乗に近い数のトンネル管理が必要となり非効率です。ハブアンドスポーク構成はトンネル数を減らせますがフルメッシュの直接通信という要件を満たさず、ハブ経由の遅延も発生します。スタティックルートの個別追加は経路制御の一部であり、トンネル構築の効率化そのものにはなりません。"}, {"id": "np-d-003", "domain": "concepts", "type": "multi", "q": "保存データ(データアットレスト)の機密性を確保するための対策として適切なものを2つ選べ。", "choices": ["ディスク/ボリューム全体の暗号化", "ファイルへのアクセスを制限するアクセス制御リスト(ACL)", "通信経路のTLS暗号化", "デジタル署名による完全性の検証", "パケットキャプチャによる監視"], "answer": [0, 1], "explanation": "正解はディスク全体の暗号化と、ファイルへのアクセス制御リストです。いずれも保存されているデータそのものへの不正なアクセス・閲覧を防ぐ、機密性に直結する対策です。TLS暗号化は通信経路上(転送中)のデータを保護するものであり保存データの保護策ではありません。デジタル署名は主に完全性や送信者の真正性の検証に使われるものであり機密性の確保が主目的ではありません。パケットキャプチャは監視のための手法であり、データそのものを保護する対策ではありません。"}, {"id": "np-d-004", "domain": "implementation", "type": "single", "q": "DHCPサーバーが設置されているサブネットとは異なるサブネットに存在するクライアントから、DHCP要求(ブロードキャスト)がサーバーに届かず、IPアドレスを取得できない。ルーターにどのような設定を追加すればこの問題を解消できるか。", "choices": ["IPヘルパーアドレス(DHCPリレー)の設定", "スタティックIPアドレスの手動割り当てのみ", "NATの追加設定", "トランクポートの追加設定"], "answer": 0, "explanation": "正解はIPヘルパーアドレス(DHCPリレー)の設定。ルーターがブロードキャストであるDHCP要求を、指定したDHCPサーバーへユニキャストで中継することで、異なるサブネットのクライアントも正常にIPアドレスを取得できるようになります。スタティックIPの手動割り当てはDHCPを使わない代替策であり自動化のメリットを失います。NATはアドレス変換技術、トランクポートは複数VLANを1本のリンクで運ぶ技術であり、いずれもサブネットを越えたDHCP要求の中継とは無関係です。"}, {"id": "np-d-005", "domain": "implementation", "type": "single", "q": "クラウドサービスが需要の増減に応じて自動的にリソースを拡大・縮小できる特性を表すNISTのクラウド定義上の用語はどれか。", "choices": ["ラピッドエラスティシティ(急速な伸縮性)", "オンデマンドセルフサービス", "リソースプーリング", "計測可能なサービス(Measured Service)"], "answer": 0, "explanation": "正解はラピッドエラスティシティ。需要に応じてリソースを自動的に、かつ迅速に拡大・縮小できる特性を指します。オンデマンドセルフサービスは利用者が管理者の介在なしに必要な時にリソースを確保できる特性、リソースプーリングは複数利用者間で物理リソースを共有する特性、計測可能なサービスは利用量を計測し従量課金等に利用できる特性であり、いずれも「需要に応じた自動的な拡大・縮小」そのものを指す用語ではありません。"}, {"id": "np-d-006", "domain": "implementation", "type": "single", "q": "大規模なクラウドデータセンターにおいて、従来のVLAN ID(4096個)の上限を超える数の論理セグメントを、レイヤー3ネットワークを越えて拡張できるようにするオーバーレイ技術はどれか。", "choices": ["VXLAN", "802.1Qトランキング", "GRE単体", "スパニングツリー"], "answer": 0, "explanation": "正解はVXLAN(Virtual Extensible LAN)。24ビットのセグメントIDを使うことで、従来のVLANの4096個という上限を大幅に超える数の論理L2セグメントを、L3ネットワークを越えて拡張できます。802.1Qトランキングは従来のVLANタグ付け技術で12ビットのVLAN IDに制限されます。GRE単体は汎用のカプセル化技術でVLAN数の制限を解決する目的の技術ではありません。スパニングツリーはループ防止のためのプロトコルであり、セグメント数の拡張とは無関係です。"}, {"id": "np-d-007", "domain": "operations", "type": "single", "q": "経営幹部は、四半期ごとにセキュリティインシデントの件数や傾向を、生のログデータではなく分かりやすい形で把握したいと希望している。最も適した提示方法はどれか。", "choices": ["ダッシュボード形式でのサマリー表示", "生のパケットキャプチャファイルの共有", "未加工のSyslogエクスポートファイル", "脆弱性スキャンの詳細な原出力"], "answer": 0, "explanation": "正解はダッシュボード形式でのサマリー表示。集計・可視化された指標やグラフにより、専門知識のない経営層でも傾向を素早く把握できます。生のパケットキャプチャ、未加工のSyslog、脆弱性スキャンの詳細出力はいずれも専門的な解析が前提となる生データであり、経営層への報告資料としては不適切です。"}, {"id": "np-d-008", "domain": "operations", "type": "single", "q": "関係者が実際にシステムを操作・停止させることなく、会議形式で災害シナリオを想定し、対応手順や役割分担の妥当性を議論する演習はどれか。", "choices": ["テーブルトップエクササイズ(机上演習)", "ペネトレーションテスト", "実際のフェイルオーバーテスト", "フルスケールの災害復旧訓練"], "answer": 0, "explanation": "正解はテーブルトップエクササイズ。関係者が会議室などに集まり、シナリオに基づいて対応手順や役割分担を議論形式で確認する、実際のシステム操作を伴わない演習です。ペネトレーションテストは実際に脆弱性の悪用可能性を検証する技術的なテスト、実際のフェイルオーバーテストやフルスケール訓練は実システムを操作・停止させる実践的な演習であり、いずれも「議論のみで完結する机上演習」とは異なります。"}, {"id": "np-d-009", "domain": "operations", "type": "single", "q": "事業継続計画(BCP)には障害対応の指揮を担う責任者が明記されていたが、実際の広域停電時にその責任者が出張中で連絡が取れず、代理で権限を行使できる者が誰も定められていなかった。今後この計画に追加すべき最も適切な要素はどれか。", "choices": ["主要な役割に対する代理者・後任者を定めた継承計画(サクセッションプラン)", "責任者の給与を増額する規定", "追加のインターネット帯域契約", "すべてのデータの暗号化強度を上げる規定"], "answer": 0, "explanation": "正解は主要な役割に対する継承計画(代理者・後任者の明確化)。責任者が不在・連絡不能な場合でも指揮系統が機能するよう、あらかじめ代理者を定めておくことがBCPの重要な要素です。給与の増額、追加帯域の契約、暗号化強度の変更はいずれも今回の問題(指揮系統の空白)を直接解決するものではありません。"}, {"id": "np-d-010", "domain": "security", "type": "single", "q": "データベース管理者の各ワークステーションから、データベースサーバーが配置されたセグメントへの直接接続を禁止し、必ず単一の制御された経路を経由してアクセスさせたい。導入すべき仕組みはどれか。", "choices": ["踏み台サーバー(ジャンプサーバー)", "ロードバランサー", "単純なポートフォワーディングのみのNATゲートウェイ", "スパニングツリー"], "answer": 0, "explanation": "正解は踏み台サーバー(ジャンプサーバー)。管理者アクセスを1つの制御・監査された経路に集約し、ワークステーションから直接データベースサーバーセグメントへ接続できないようにします。ロードバランサーは負荷分散が目的の機器、NATゲートウェイはアドレス変換が主目的、スパニングツリーはループ防止のプロトコルであり、いずれも「管理者アクセスの単一制御点への集約」を実現する仕組みではありません。"}, {"id": "np-d-011", "domain": "security", "type": "single", "q": "あるファイアウォールは、クラッシュや障害発生時に「フェイルオープン」モードで動作するよう設定されている。この設定が持つセキュリティ上の主なリスクはどれか。", "choices": ["障害発生時にすべての通信が検査されずに許可されてしまう", "障害発生時にすべての通信が完全に遮断される", "障害発生時にログ出力量が減少する", "障害発生時にCPU使用率が低下する"], "answer": 0, "explanation": "正解は、障害発生時にすべての通信が検査されずに許可されてしまうこと。フェイルオープンは可用性を優先する設定であり、ファイアウォールが機能停止した際にトラフィックを無条件に通過させるため、その間はフィルタリングによる保護が完全に失われます。障害時に通信を遮断するのはフェイルクローズの動作であり、本設問の説明とは逆です。ログ出力量やCPU使用率の変化は、この設定が持つ本質的なセキュリティリスクの説明にはなりません。"}, {"id": "np-d-012", "domain": "security", "type": "single", "q": "社外からアクセス可能なメールサーバーを設置する際、内部ネットワークへの侵害リスクを抑えつつ外部公開を行うために配置すべき場所はどれか。", "choices": ["スクリーンドサブネット(DMZ)", "社内の基幹業務サーバーと同じVLAN", "管理者のワークステーションと同じセグメント", "バックアップサーバーと同じセグメント"], "answer": 0, "explanation": "正解はスクリーンドサブネット(DMZ)。外部公開が必要なサーバーを内部の重要なセグメントとは分離された緩衝領域に配置することで、万一そのサーバーが侵害されても内部ネットワークへの直接的な影響を抑えられます。基幹業務サーバーや管理者ワークステーション、バックアップサーバーと同一のセグメントに配置すると、外部公開サーバーの侵害が内部の重要資産に直結するリスクが高まるため不適切です。"}, {"id": "np-d-013", "domain": "troubleshooting", "type": "single", "q": "あるワークステーションのNICのインジケーターランプが、コンピューター側・スイッチ側のいずれでも点灯・点滅していない。ケーブルを既知の正常なものに交換しても状況が変わらず、同じスイッチポートに別の正常な端末を接続しても同様にリンクが確立しない。最も可能性が高い原因はどれか。", "choices": ["スイッチポートが管理上シャットダウンされている、または当該ポートのハードウェアが故障している", "VLANの割り当てが誤っている", "デュプレックスの不一致", "IPアドレスの重複"], "answer": 0, "explanation": "正解は、スイッチポートの管理上のシャットダウンまたはポート自体のハードウェア故障。ケーブルを交換しても、別の正常な端末を同じポートに接続しても改善しないことから、原因はケーブルや端末側ではなく当該スイッチポート自体にあると判断できます。VLANの割り当て誤りやデュプレックスの不一致であれば、リンク自体は確立し(ランプは点灯し)、その上で通信エラーや到達性の問題が発生するはずです。IPアドレスの重複は上位層の問題であり、物理層のリンクランプが完全に消灯する症状の説明にはなりません。"}, {"id": "np-d-014", "domain": "troubleshooting", "type": "single", "q": "社内の複数の利用者から「特定の内部Webサイトにアクセスすると誤ったIPアドレスに接続されてしまう」との報告があった。DNSサーバーに対して直接nslookupで問い合わせると正しいIPアドレスが返るが、影響は数台の特定のワークステーションのみに限定されている。最も可能性が高い原因はどれか。", "choices": ["該当ワークステーションのhostsファイルに古い静的なエントリが残っている", "DNSサーバー上のレコードが誤っている", "デフォルトゲートウェイの設定ミス", "スイッチポートのVLAN割り当て誤り"], "answer": 0, "explanation": "正解はhostsファイルの古い静的エントリ。DNSサーバーへの直接問い合わせでは正しい結果が返っていることから、DNSサーバー側のレコードは正常であると判断できます。影響が特定の少数の端末に限定されていることから、それらの端末のローカルなhostsファイル(DNSより優先して参照される)に古い静的な対応関係が残っていることが最も可能性の高い原因です。DNSサーバー上のレコード誤りであれば、nslookupの結果自体も誤りになるはずです。デフォルトゲートウェイの設定ミスやVLAN割り当て誤りは、名前解決結果自体の誤りではなく、より広範な通信断や到達性の問題を引き起こします。"}, {"id": "np-d-015", "domain": "troubleshooting", "type": "single", "q": "新しく追加されたDHCPサーバーが、既存のDHCPサーバーと重複するアドレス範囲(スコープ)で稼働していたため、複数のワークステーションで「IPアドレスの重複」エラーが発生した。この問題への最も適切な対応はどれか。", "choices": ["重複するスコープを解消するよう、いずれかのDHCPサーバーのアドレス範囲を修正または該当サーバーを無効化する", "すべてのワークステーションのIPアドレスを固定(スタティック)に変更する", "スイッチのポートセキュリティを有効化する", "スパニングツリーの優先度を変更する"], "answer": 0, "explanation": "正解は、重複するDHCPスコープの修正または該当サーバーの無効化。根本原因は複数のDHCPサーバーが同一のアドレス範囲を配布してしまっていることであるため、スコープの重複を解消することが直接的な解決策です。全端末を固定IPに変更することは一時的な回避にはなり得ますが、大規模環境では運用負荷が高く現実的な恒久対策ではありません。ポートセキュリティやスパニングツリーの優先度変更は、この問題(DHCPスコープの重複)とは直接関係のない対策です。"}];
+
+/* ---------- storage ---------- */
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return {};
+    return JSON.parse(raw);
+  }catch(e){ return {}; }
+}
+function saveHistory(h){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); }catch(e){}
+}
+let HISTORY = loadHistory();
+// HISTORY[qid] = {correct: n, wrong: n, flag: bool, lastResult: 'correct'|'wrong'|null}
+
+function recordAnswer(qid, isCorrect){
+  if(!HISTORY[qid]) HISTORY[qid] = {correct:0, wrong:0, flag:false, lastResult:null};
+  if(isCorrect){ HISTORY[qid].correct++; } else { HISTORY[qid].wrong++; }
+  HISTORY[qid].lastResult = isCorrect ? 'correct' : 'wrong';
+  saveHistory(HISTORY);
+}
+function toggleFlag(qid){
+  if(!HISTORY[qid]) HISTORY[qid] = {correct:0, wrong:0, flag:false, lastResult:null};
+  HISTORY[qid].flag = !HISTORY[qid].flag;
+  saveHistory(HISTORY);
+  return HISTORY[qid].flag;
+}
+
+/* ---------- helpers ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function byDomain(dom){ return QUESTIONS.filter(q=>q.domain===dom); }
+function qLabel(dom){ return DOMAIN_LABELS[dom] || dom; }
+
+/* ---------- tab navigation ---------- */
+const tabButtons = document.querySelectorAll('nav.tabs button');
+tabButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(btn.dataset.tab){ showView(btn.dataset.tab, true); }
+  });
+});
+function showView(name, isTab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(isTab){
+    tabButtons.forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+    if(name==='home') renderHome();
+    if(name==='practice') renderPracticeSetup();
+    if(name==='review') renderReviewList();
+  }
+}
+
+/* ---------- home rendering ---------- */
+function renderHome(){
+  const ids = Object.keys(HISTORY);
+  let totalAnswers=0, totalCorrect=0, mastered=0, weakFlag=0;
+  ids.forEach(id=>{
+    const h = HISTORY[id];
+    totalAnswers += h.correct + h.wrong;
+    totalCorrect += h.correct;
+    if(h.correct>=2 && h.wrong===0) mastered++;
+    if(h.flag || h.lastResult==='wrong') weakFlag++;
+  });
+  document.getElementById('stat-total').textContent = totalAnswers;
+  document.getElementById('stat-acc').textContent = totalAnswers? Math.round(totalCorrect/totalAnswers*100)+'%' : '0%';
+  document.getElementById('stat-mastered').textContent = mastered;
+  document.getElementById('stat-weak').textContent = weakFlag;
+
+  const domains = Object.keys(DOMAIN_LABELS);
+  const container = document.getElementById('domain-bars');
+  container.innerHTML = '';
+  domains.forEach(dom=>{
+    const qs = byDomain(dom);
+    let c=0,w=0;
+    qs.forEach(q=>{ const h=HISTORY[q.id]; if(h){c+=h.correct; w+=h.wrong;} });
+    const total = c+w;
+    const pct = total? Math.round(c/total*100) : 0;
+    const row = document.createElement('div');
+    row.className='domain-row';
+    row.innerHTML = `<span class="name">${qLabel(dom)}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="pct">${pct}%</span>`;
+    container.appendChild(row);
+  });
+}
+
+/* ---------- practice setup ---------- */
+let selectedDomain = null;
+let selectedCount = 10;
+function renderPracticeSetup(){
+  const container = document.getElementById('domain-chips');
+  container.innerHTML='';
+  Object.keys(DOMAIN_LABELS).forEach(dom=>{
+    const chip = document.createElement('span');
+    chip.className='chip'+(selectedDomain===dom?' on':'');
+    chip.textContent = qLabel(dom) + `(${byDomain(dom).length})`;
+    chip.addEventListener('click', ()=>{ selectedDomain=dom; renderPracticeSetup(); });
+    container.appendChild(chip);
+  });
+  document.querySelectorAll('#count-chips .chip').forEach(c=>{
+    c.classList.toggle('on', parseInt(c.dataset.count)===selectedCount);
+  });
+  if(!selectedDomain && Object.keys(DOMAIN_LABELS).length){
+    selectedDomain = Object.keys(DOMAIN_LABELS)[0];
+    renderPracticeSetup();
+  }
+}
+document.getElementById('count-chips').addEventListener('click', (e)=>{
+  if(e.target.classList.contains('chip')){
+    selectedCount = parseInt(e.target.dataset.count);
+    renderPracticeSetup();
+  }
+});
+document.getElementById('start-practice').addEventListener('click', ()=>{
+  let pool = byDomain(selectedDomain);
+  pool = shuffle(pool);
+  if(selectedCount>0) pool = pool.slice(0, selectedCount);
+  startQuiz(pool, {mode:'practice'});
+});
+
+/* ---------- mock exam setup ---------- */
+let mockLen = 20;
+document.getElementById('mock-len-chips').addEventListener('click', (e)=>{
+  if(e.target.classList.contains('chip')){
+    document.querySelectorAll('#mock-len-chips .chip').forEach(c=>c.classList.remove('on'));
+    e.target.classList.add('on');
+    mockLen = parseInt(e.target.dataset.len);
+  }
+});
+document.getElementById('start-mock').addEventListener('click', ()=>{
+  const pool = buildMockPool(mockLen);
+  startQuiz(pool, {mode:'mock', timeLimitMin:mockLen});
+});
+document.getElementById('quick-mock').addEventListener('click', ()=>{
+  mockLen = Math.min(90, QUESTIONS.length);
+  const pool = buildMockPool(mockLen);
+  startQuiz(pool, {mode:'mock', timeLimitMin:mockLen});
+});
+function buildMockPool(n){
+  const domains = Object.keys(DOMAIN_WEIGHTS);
+  let picks = [];
+  domains.forEach(dom=>{
+    const weight = DOMAIN_WEIGHTS[dom];
+    const count = Math.max(1, Math.round(n*weight));
+    const qs = shuffle(byDomain(dom)).slice(0,count);
+    picks = picks.concat(qs);
+  });
+  picks = shuffle(picks);
+  if(picks.length>n) picks = picks.slice(0,n);
+  // fill up if short (small n / rounding)
+  if(picks.length<n){
+    const usedIds = new Set(picks.map(p=>p.id));
+    const rest = shuffle(QUESTIONS.filter(q=>!usedIds.has(q.id)));
+    picks = picks.concat(rest.slice(0, n-picks.length));
+  }
+  return picks;
+}
+
+/* ---------- review ---------- */
+function weakQuestions(){
+  return QUESTIONS.filter(q=>{
+    const h = HISTORY[q.id];
+    return h && (h.flag || h.lastResult==='wrong');
+  });
+}
+function renderReviewList(){
+  const list = weakQuestions();
+  const container = document.getElementById('review-list');
+  if(list.length===0){
+    container.innerHTML = '<p class="small">現在、苦手問題やフラグ付き問題はありません。演習を進めると自動的にここに追加されます。</p>';
+    return;
+  }
+  container.innerHTML='';
+  list.forEach(q=>{
+    const h = HISTORY[q.id];
+    const div = document.createElement('div');
+    div.className='review-item';
+    div.innerHTML = `<div class="rmeta">${qLabel(q.domain)}${h.flag?' ・ 🚩フラグ':''}${h.lastResult==='wrong'?' ・ 直近不正解':''}</div><div class="rq">${escapeHtml(q.q)}</div>`;
+    container.appendChild(div);
+  });
+}
+document.getElementById('start-review').addEventListener('click', ()=>{
+  const pool = shuffle(weakQuestions());
+  if(pool.length===0){ alert('苦手問題がまだありません。'); return; }
+  startQuiz(pool, {mode:'review'});
+});
+document.getElementById('quick-weak').addEventListener('click', ()=>{
+  const pool = shuffle(weakQuestions());
+  if(pool.length===0){ alert('苦手問題がまだありません。まずは分野別演習や模擬試験に挑戦してみましょう。'); showView('practice', true); return; }
+  startQuiz(pool, {mode:'review'});
+});
+
+/* ---------- quiz engine ---------- */
+let quizState = null;
+function startQuiz(pool, opts){
+  if(!pool || pool.length===0){ alert('出題できる問題がありません。'); return; }
+  quizState = {
+    pool: pool,
+    idx: 0,
+    answers: [], // {qid, chosen, correct, domain}
+    mode: opts.mode,
+    timeLimitMin: opts.timeLimitMin || null,
+    endAt: opts.timeLimitMin ? (Date.now() + opts.timeLimitMin*60000) : null,
+    answeredCurrent: false,
+    finished: false
+  };
+  showView('quiz', false);
+  tabButtons.forEach(b=>b.classList.remove('active'));
+  renderQuestion();
+  if(quizState.endAt){ tickTimer(); }
+}
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+let multiSelected = new Set();
+function renderQuestion(){
+  const q = quizState.pool[quizState.idx];
+  quizState.answeredCurrent = false;
+  multiSelected = new Set();
+  const isMulti = q.type === 'multi';
+  document.getElementById('quiz-counter').textContent = `問題 ${quizState.idx+1} / ${quizState.pool.length}`;
+  document.getElementById('quiz-progressfill').style.width = Math.round((quizState.idx)/quizState.pool.length*100)+'%';
+  document.getElementById('quiz-domain-tag').textContent = qLabel(q.domain);
+  document.getElementById('quiz-qtext').textContent = q.q + (isMulti ? `(該当するものを${q.answer.length}つ選択)` : '');
+  const choicesEl = document.getElementById('quiz-choices');
+  choicesEl.innerHTML='';
+  q.choices.forEach((c, i)=>{
+    const btn = document.createElement('button');
+    btn.className='choice';
+    btn.innerHTML = `<span class="idx${isMulti?' box':''}">${i+1}</span>${escapeHtml(c)}`;
+    if(isMulti){
+      btn.addEventListener('click', ()=>toggleMultiChoice(i, btn));
+    } else {
+      btn.addEventListener('click', ()=>selectChoice(i));
+    }
+    choicesEl.appendChild(btn);
+  });
+  document.getElementById('quiz-explain').innerHTML='';
+  document.getElementById('quiz-next').style.display='none';
+  const submitBtn = document.getElementById('quiz-submit');
+  submitBtn.style.display = isMulti ? 'block' : 'none';
+  submitBtn.disabled = true;
+  submitBtn.onclick = ()=>submitMulti();
+  const flagBtn = document.getElementById('quiz-flag');
+  flagBtn.classList.toggle('on', !!(HISTORY[q.id] && HISTORY[q.id].flag));
+  flagBtn.onclick = ()=>{
+    const on = toggleFlag(q.id);
+    flagBtn.classList.toggle('on', on);
+  };
+}
+function toggleMultiChoice(i, btn){
+  if(quizState.answeredCurrent) return;
+  if(multiSelected.has(i)){ multiSelected.delete(i); btn.classList.remove('checked'); }
+  else { multiSelected.add(i); btn.classList.add('checked'); }
+  document.getElementById('quiz-submit').disabled = (multiSelected.size===0);
+}
+function submitMulti(){
+  if(quizState.answeredCurrent) return;
+  quizState.answeredCurrent = true;
+  const q = quizState.pool[quizState.idx];
+  const correctSet = new Set(q.answer);
+  const chosenArr = Array.from(multiSelected).sort();
+  const isCorrect = chosenArr.length===correctSet.size && chosenArr.every(i=>correctSet.has(i));
+  recordAnswer(q.id, isCorrect);
+  quizState.answers.push({qid:q.id, chosen:chosenArr, correct:isCorrect, domain:q.domain});
+  const buttons = document.querySelectorAll('#quiz-choices .choice');
+  buttons.forEach((b,idx)=>{
+    b.classList.remove('checked');
+    b.classList.add('disabled');
+    if(correctSet.has(idx)) b.classList.add('correct');
+    else if(multiSelected.has(idx)) b.classList.add('wrong');
+  });
+  document.getElementById('quiz-submit').style.display='none';
+  document.getElementById('quiz-explain').innerHTML = `<div class="explain"><b>${isCorrect?'正解です。':'不正解です。'}</b> ${escapeHtml(q.explanation)}</div>`;
+  const nextBtn = document.getElementById('quiz-next');
+  nextBtn.style.display='block';
+  nextBtn.textContent = (quizState.idx+1 < quizState.pool.length) ? '次の問題へ' : '結果を見る';
+}
+function selectChoice(i){
+  if(quizState.answeredCurrent) return;
+  quizState.answeredCurrent = true;
+  const q = quizState.pool[quizState.idx];
+  const correct = q.answer;
+  const isCorrect = (i===correct);
+  recordAnswer(q.id, isCorrect);
+  quizState.answers.push({qid:q.id, chosen:i, correct:isCorrect, domain:q.domain});
+  const buttons = document.querySelectorAll('#quiz-choices .choice');
+  buttons.forEach((b,idx)=>{
+    b.classList.add('disabled');
+    if(idx===correct) b.classList.add('correct');
+    if(idx===i && i!==correct) b.classList.add('wrong');
+  });
+  document.getElementById('quiz-explain').innerHTML = `<div class="explain"><b>${isCorrect?'正解です。':'不正解です。'}</b> ${escapeHtml(q.explanation)}</div>`;
+  const nextBtn = document.getElementById('quiz-next');
+  nextBtn.style.display='block';
+  nextBtn.textContent = (quizState.idx+1 < quizState.pool.length) ? '次の問題へ' : '結果を見る';
+}
+document.getElementById('quiz-next').addEventListener('click', ()=>{
+  quizState.idx++;
+  if(quizState.idx >= quizState.pool.length){
+    finishQuiz();
+  } else {
+    renderQuestion();
+  }
+});
+function tickTimer(){
+  if(!quizState || quizState.finished || !quizState.endAt) return;
+  const remain = quizState.endAt - Date.now();
+  const el = document.getElementById('quiz-timer');
+  if(remain<=0){
+    el.textContent = '00:00';
+    finishQuiz();
+    return;
+  }
+  const m = Math.floor(remain/60000);
+  const s = Math.floor((remain%60000)/1000);
+  el.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  el.classList.toggle('low', remain < 5*60000);
+  setTimeout(tickTimer, 1000);
+}
+function finishQuiz(){
+  if(quizState.finished) return;
+  quizState.finished = true;
+  const answers = quizState.answers;
+  const total = answers.length;
+  const correctCount = answers.filter(a=>a.correct).length;
+  const pct = total? Math.round(correctCount/total*100) : 0;
+  document.getElementById('result-score').textContent = pct+'%';
+  document.getElementById('result-score').className = 'big ' + (pct>=72 ? 'pass':'fail');
+  document.getElementById('result-detail').textContent = `${correctCount} / ${total} 問正解` + (quizState.mode==='mock' ? (pct>=72 ? '(合格ライン目安72%達成)':'(合格ライン目安72%未達)') : '');
+  const byDom = {};
+  answers.forEach(a=>{
+    if(!byDom[a.domain]) byDom[a.domain]={c:0,t:0};
+    byDom[a.domain].t++; if(a.correct) byDom[a.domain].c++;
+  });
+  const container = document.getElementById('result-domain-bars');
+  container.innerHTML='';
+  Object.keys(byDom).forEach(dom=>{
+    const d = byDom[dom];
+    const p = Math.round(d.c/d.t*100);
+    const row = document.createElement('div');
+    row.className='domain-row';
+    row.innerHTML = `<span class="name">${qLabel(dom)}</span><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div><span class="pct">${p}%</span>`;
+    container.appendChild(row);
+  });
+  showView('result', false);
+  tabButtons.forEach(b=>b.classList.remove('active'));
+}
+document.getElementById('result-home-btn').addEventListener('click', ()=>{ showView('home', true); });
+document.getElementById('result-review-btn').addEventListener('click', ()=>{
+  const wrongIds = new Set(quizState.answers.filter(a=>!a.correct).map(a=>a.qid));
+  const pool = QUESTIONS.filter(q=>wrongIds.has(q.id));
+  if(pool.length===0){ alert('この回では間違えた問題はありませんでした。'); showView('home', true); return; }
+  startQuiz(pool, {mode:'review'});
+});
+
+/* ---------- data export/import/reset ---------- */
+document.getElementById('export-btn').addEventListener('click', ()=>{
+  const payload = { exam: EXAM_CODE, exportedAt: new Date().toISOString(), history: HISTORY };
+  document.getElementById('export-area').value = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+});
+document.getElementById('import-btn').addEventListener('click', ()=>{
+  const raw = document.getElementById('import-area').value.trim();
+  if(!raw){ alert('貼り付けるテキストがありません。'); return; }
+  try{
+    const json = decodeURIComponent(escape(atob(raw)));
+    const payload = JSON.parse(json);
+    if(!payload.history) throw new Error('形式が不正です');
+    HISTORY = payload.history;
+    saveHistory(HISTORY);
+    alert('復元しました。');
+    renderHome();
+  }catch(e){
+    alert('読み込みに失敗しました。テキストが正しいか確認してください。');
+  }
+});
+document.getElementById('reset-btn').addEventListener('click', ()=>{
+  if(confirm('本当にすべての学習履歴を削除しますか?この操作は取り消せません。')){
+    HISTORY = {};
+    saveHistory(HISTORY);
+    renderHome();
+    alert('削除しました。');
+  }
+});
+
+/* ---------- init ---------- */
+(function adjustMockChips(){
+  const total = QUESTIONS.length;
+  document.querySelectorAll('#mock-len-chips .chip').forEach(chip=>{
+    const len = parseInt(chip.dataset.len);
+    if(len > total){
+      chip.dataset.len = total;
+      chip.dataset.min = total;
+      chip.textContent = `${total}問(${total}分・全問)`;
+    }
+  });
+})();
+renderHome();
+renderPracticeSetup();
+</script>
+</body>
+</html>
