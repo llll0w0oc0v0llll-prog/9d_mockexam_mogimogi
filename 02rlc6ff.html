@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Security+ 模擬試験ツール</title>
 <style>
@@ -478,16 +479,19 @@ function renderQuestion(){
   document.getElementById('quiz-progressfill').style.width = Math.round((quizState.idx)/quizState.pool.length*100)+'%';
   document.getElementById('quiz-domain-tag').textContent = qLabel(q.domain);
   document.getElementById('quiz-qtext').textContent = q.q + (isMulti ? `(該当するものを${q.answer.length}つ選択)` : '');
+  const order = shuffle(q.choices.map((c,i)=>i)); // shuffled original indices
   const choicesEl = document.getElementById('quiz-choices');
   choicesEl.innerHTML='';
-  q.choices.forEach((c, i)=>{
+  order.forEach((origIdx, pos)=>{
+    const c = q.choices[origIdx];
     const btn = document.createElement('button');
     btn.className='choice';
-    btn.innerHTML = `<span class="idx${isMulti?' box':''}">${i+1}</span>${escapeHtml(c)}`;
+    btn.dataset.orig = origIdx;
+    btn.innerHTML = `<span class="idx${isMulti?' box':''}">${pos+1}</span>${escapeHtml(c)}`;
     if(isMulti){
-      btn.addEventListener('click', ()=>toggleMultiChoice(i, btn));
+      btn.addEventListener('click', ()=>toggleMultiChoice(origIdx, btn));
     } else {
-      btn.addEventListener('click', ()=>selectChoice(i));
+      btn.addEventListener('click', ()=>selectChoice(origIdx));
     }
     choicesEl.appendChild(btn);
   });
@@ -520,11 +524,12 @@ function submitMulti(){
   recordAnswer(q.id, isCorrect);
   quizState.answers.push({qid:q.id, chosen:chosenArr, correct:isCorrect, domain:q.domain});
   const buttons = document.querySelectorAll('#quiz-choices .choice');
-  buttons.forEach((b,idx)=>{
+  buttons.forEach(b=>{
+    const orig = parseInt(b.dataset.orig, 10);
     b.classList.remove('checked');
     b.classList.add('disabled');
-    if(correctSet.has(idx)) b.classList.add('correct');
-    else if(multiSelected.has(idx)) b.classList.add('wrong');
+    if(correctSet.has(orig)) b.classList.add('correct');
+    else if(multiSelected.has(orig)) b.classList.add('wrong');
   });
   document.getElementById('quiz-submit').style.display='none';
   document.getElementById('quiz-explain').innerHTML = `<div class="explain"><b>${isCorrect?'正解です。':'不正解です。'}</b> ${escapeHtml(q.explanation)}</div>`;
@@ -541,10 +546,11 @@ function selectChoice(i){
   recordAnswer(q.id, isCorrect);
   quizState.answers.push({qid:q.id, chosen:i, correct:isCorrect, domain:q.domain});
   const buttons = document.querySelectorAll('#quiz-choices .choice');
-  buttons.forEach((b,idx)=>{
+  buttons.forEach(b=>{
+    const orig = parseInt(b.dataset.orig, 10);
     b.classList.add('disabled');
-    if(idx===correct) b.classList.add('correct');
-    if(idx===i && i!==correct) b.classList.add('wrong');
+    if(orig===correct) b.classList.add('correct');
+    if(orig===i && orig!==correct) b.classList.add('wrong');
   });
   document.getElementById('quiz-explain').innerHTML = `<div class="explain"><b>${isCorrect?'正解です。':'不正解です。'}</b> ${escapeHtml(q.explanation)}</div>`;
   const nextBtn = document.getElementById('quiz-next');
