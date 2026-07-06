@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CompTIA シミュレーション問題(PBQ)</title>
+<style>
+:root{
+  --ink:#1b2430; --paper:#f6f5f2; --panel:#ffffff; --line:#dcd8d0;
+  --accent:#3d5a80; --accent-dark:#2c4260; --good:#2a9d8f; --bad:#c1483a; --warn:#e0952a;
+  --mono: ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-tap-highlight-color:transparent;}
+body{padding-bottom:40px;}
+.app{max-width:720px;margin:0 auto;padding:0 16px;}
+header.top{background:var(--ink);color:#fff;padding:18px 16px 16px;position:sticky;top:0;z-index:20;}
+header.top .inner{max-width:720px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+header.top h1{font-size:15px;margin:0;font-weight:600;}
+header.top .sub{font-family:var(--mono);font-size:11px;color:#b9c4d6;}
+nav.tabs{display:flex;gap:6px;padding:10px 16px 0;max-width:720px;margin:0 auto;}
+nav.tabs button{flex:1;padding:9px 6px;font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:8px 8px 0 0;color:#5a6472;cursor:pointer;font-family:var(--sans);}
+nav.tabs button.active{background:var(--paper);color:var(--ink);font-weight:600;box-shadow:0 -2px 0 var(--accent) inset;}
+main{padding-top:16px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
+.card h2{font-size:14px;margin:0 0 6px;color:var(--accent-dark);}
+.small{font-size:12px;color:#75808c;line-height:1.6;}
+button.primary{background:var(--accent);color:#fff;border:none;padding:12px 16px;border-radius:8px;font-size:14.5px;font-weight:600;cursor:pointer;width:100%;font-family:var(--sans);}
+button.primary:disabled{background:#a9b4c2;cursor:default;}
+button.secondary{background:var(--panel);color:var(--accent-dark);border:1px solid var(--accent);padding:10px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;width:100%;font-family:var(--sans);}
+.qmeta{font-family:var(--mono);font-size:11px;color:#75808c;margin-bottom:4px;}
+.qtitle{font-size:16px;font-weight:600;margin:0 0 8px;}
+.qinstr{font-size:13.5px;line-height:1.7;color:#33404d;margin-bottom:14px;}
+.pbq-badge{display:inline-block;background:#eef2f6;color:var(--accent-dark);font-size:10.5px;font-family:var(--mono);padding:2px 8px;border-radius:5px;margin-bottom:8px;}
+/* match */
+.match-wrap{display:flex;flex-direction:column;gap:10px;}
+.match-row{display:flex;align-items:stretch;gap:8px;}
+.match-left{flex:1;background:#f0f2f5;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;display:flex;align-items:center;}
+.match-drop{flex:1;min-height:44px;border:1.5px dashed #b9c0cc;border-radius:8px;padding:8px 10px;font-size:13px;display:flex;align-items:center;justify-content:center;color:#9aa1a8;background:#fbfaf8;text-align:center;}
+.match-drop.filled{border-style:solid;border-color:var(--accent);background:#eef2f6;color:var(--ink);cursor:pointer;}
+.match-drop.correct{border-color:var(--good);background:#eaf6f4;color:var(--ink);}
+.match-drop.wrong{border-color:var(--bad);background:#fbeceb;color:var(--ink);}
+.token-pool{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);}
+.token{background:var(--panel);border:1.5px solid var(--accent);color:var(--accent-dark);border-radius:8px;padding:8px 12px;font-size:13px;cursor:grab;user-select:none;}
+.token.used{opacity:.35;pointer-events:none;}
+.token.selected{background:var(--accent);color:#fff;}
+.pool-label{font-size:11.5px;color:#75808c;width:100%;margin-bottom:2px;}
+/* order */
+.order-list{display:flex;flex-direction:column;gap:8px;}
+.order-item{background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:12px;font-size:13.5px;display:flex;align-items:center;gap:10px;cursor:grab;user-select:none;}
+.order-item .grip{color:#b9c0cc;font-size:16px;}
+.order-item .pos{font-family:var(--mono);font-size:11px;color:#75808c;width:20px;}
+.order-item.dragging{opacity:.5;}
+.order-item.correct{border-color:var(--good);background:#eaf6f4;}
+.order-item.wrong{border-color:var(--bad);background:#fbeceb;}
+.order-btns{display:flex;flex-direction:column;gap:2px;margin-left:auto;}
+.order-btns button{border:1px solid var(--line);background:#f0f2f5;border-radius:5px;width:30px;height:22px;font-size:12px;cursor:pointer;line-height:1;}
+/* input */
+input.txt{width:100%;padding:12px;font-family:var(--mono);font-size:15px;border:1.5px solid var(--line);border-radius:8px;background:#fbfaf8;}
+input.txt.correct{border-color:var(--good);background:#eaf6f4;}
+input.txt.wrong{border-color:var(--bad);background:#fbeceb;}
+/* mcq */
+.choice{display:block;width:100%;text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:9px;font-size:14px;line-height:1.5;cursor:pointer;font-family:var(--sans);color:var(--ink);}
+.choice .idx{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:#eceae5;font-family:var(--mono);font-size:11px;margin-right:8px;color:#5a6472;}
+.choice.correct{border-color:var(--good);background:#eaf6f4;}
+.choice.correct .idx{background:var(--good);color:#fff;}
+.choice.wrong{border-color:var(--bad);background:#fbeceb;}
+.choice.wrong .idx{background:var(--bad);color:#fff;}
+.choice.disabled{cursor:default;}
+.explain{background:#f0f4f8;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13px;line-height:1.7;color:#33404d;margin-top:14px;}
+.explain b{color:var(--accent-dark);}
+.verdict{font-weight:700;}
+.verdict.ok{color:var(--good);}
+.verdict.ng{color:var(--bad);}
+.btnrow{display:flex;gap:10px;margin-top:14px;}
+.btnrow > *{flex:1;}
+.progress{font-family:var(--mono);font-size:12px;color:#75808c;text-align:center;margin-bottom:10px;}
+footer.note{max-width:720px;margin:20px auto 0;padding:0 16px;font-size:11px;color:#9aa1a8;text-align:center;line-height:1.6;}
+.reset-hint{font-size:11px;color:#9aa1a8;margin-top:8px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="inner"><h1>CompTIA シミュレーション問題(PBQ)</h1><span class="sub">Network+ / Security+</span></div>
+</header>
+<nav class="tabs">
+  <button data-exam="network" class="active">Network+</button>
+  <button data-exam="security">Security+</button>
+</nav>
+<main>
+  <section id="view-intro" class="">
+    <div class="card">
+      <h2>パフォーマンスベース問題(PBQ)について</h2>
+      <p class="small">本番のCompTIA試験には、選択式に加えて操作を伴う「パフォーマンスベース問題(PBQ)」が数問出題されます。ここでは、ドラッグ&ドロップの対応付け、並べ替え、サブネット計算の入力、コマンド出力の解釈といった、出題頻度の高い形式を練習できます。上のタブで試験を選び、下のボタンから開始してください。</p>
+      <div style="margin-top:14px;"><button class="primary" id="start-btn">Network+ のPBQを開始</button></div>
+      <p class="reset-hint">※本ツールは公式問題ではなく、出題範囲に基づくオリジナルの模擬問題です。</p>
+    </div>
+  </section>
+
+  <section id="view-quiz" style="display:none;">
+    <div class="progress" id="progress"></div>
+    <div class="card" id="qcard"></div>
+    <div class="btnrow" id="btnrow"></div>
+  </section>
+
+  <section id="view-done" style="display:none;">
+    <div class="card">
+      <h2 id="done-title">完了</h2>
+      <p class="small" id="done-detail"></p>
+      <div style="margin-top:14px;"><button class="primary" id="restart-btn">もう一度挑戦する</button></div>
+    </div>
+  </section>
+</main>
+<footer class="note">すべて端末内で完結し、外部通信は行いません。<br>本ツールはCompTIA公式試験問題ではなく、公開されている出題範囲に基づくオリジナル問題です。</footer>
+</div>
+
+<script>
+const DATA = {"network": [{"id": "npq-match-ports", "type": "match", "domain": "ポート番号とプロトコル", "title": "ポート番号とプロトコルの対応", "instruction": "左側の各サービスを、右側の正しいポート番号にドラッグして対応させてください。すべて正しく対応させると正解です。", "left": ["HTTPS", "SSH", "DNS", "RDP", "SMTP"], "right": ["443", "22", "53", "3389", "25"], "answer": {"HTTPS": "443", "SSH": "22", "DNS": "53", "RDP": "3389", "SMTP": "25"}, "explanation": "HTTPS=443(暗号化Web)、SSH=22(暗号化リモート接続)、DNS=53(名前解決)、RDP=3389(リモートデスクトップ)、SMTP=25(メール送信)。これらは頻出のため確実に暗記が必要です。特にSSH(22)とTelnet(23)、HTTP(80)とHTTPS(443)の混同に注意してください。"}, {"id": "npq-match-osi", "type": "match", "domain": "OSI参照モデル", "title": "OSI層と機能・機器の対応", "instruction": "左側の各項目を、それが動作・該当するOSI層にドラッグして対応させてください。", "left": ["ルーター / IPアドレス", "スイッチ / MACアドレス", "ケーブル・信号(ビット)", "TCP / UDP・ポート番号"], "right": ["レイヤー3(ネットワーク層)", "レイヤー2(データリンク層)", "レイヤー1(物理層)", "レイヤー4(トランスポート層)"], "answer": {"ルーター / IPアドレス": "レイヤー3(ネットワーク層)", "スイッチ / MACアドレス": "レイヤー2(データリンク層)", "ケーブル・信号(ビット)": "レイヤー1(物理層)", "TCP / UDP・ポート番号": "レイヤー4(トランスポート層)"}, "explanation": "ルーティングとIPアドレスはレイヤー3、スイッチングとMACアドレスはレイヤー2、物理的なケーブルやビット伝送はレイヤー1、TCP/UDPとポート番号によるプロセス間通信はレイヤー4です。機器や概念がどの層に属するかはPBQ・選択問題の双方で頻出です。"}, {"id": "npq-subnet-1", "type": "input", "domain": "サブネッティング", "title": "サブネット計算(ネットワークアドレス)", "instruction": "ホスト 172.16.45.200 /27 が属するサブネットの「ネットワークアドレス」を入力してください(例: 172.16.45.0)。", "answer": ["172.16.45.192"], "explanation": "/27 はブロックサイズ32(256-224)なので、第4オクテットは 0, 32, 64, ..., 192, 224 と区切られます。200 は 192〜223 の範囲に入るため、ネットワークアドレスは 172.16.45.192 です。ブロードキャストは 172.16.45.223、利用可能ホスト範囲は .193〜.222 となります。"}, {"id": "npq-subnet-2", "type": "input", "domain": "サブネッティング", "title": "サブネット計算(必要プレフィックス)", "instruction": "各サブネットに最低50台のホストを収容する必要があります。無駄を最小限にして要件を満たすCIDRプレフィックスを「/26」のような形式で入力してください。", "answer": ["/26", "26"], "explanation": "/26 は 2^6-2 = 62 ホストを収容でき、50台という要件を満たす最小サイズです。/27 は30ホストで足りず、/25 は126ホストで要件は満たすものの過剰にアドレスを消費します。「2のべき乗-2 が必要数以上になる最小プレフィックス」を選びます。"}, {"id": "npq-cmd-apipa", "type": "mcq", "domain": "コマンド出力の解釈", "title": "ipconfig 出力の解釈", "instruction": "あるWindows端末で ipconfig を実行した結果、IPv4アドレスが 169.254.12.88、サブネットマスクが 255.255.0.0、デフォルトゲートウェイが空欄と表示された。この端末で最も可能性が高い問題はどれか。", "choices": ["DHCPサーバーからIPアドレスを取得できず、APIPAが割り当てられている", "静的IPアドレスが正しく設定されている", "DNSサーバーが応答していない", "デフォルトゲートウェイが二重に設定されている"], "answer": 0, "explanation": "169.254.x.x はAPIPA(自動プライベートIPアドレッシング)のアドレス範囲で、DHCPサーバーから応答が得られなかった場合にWindowsがOSレベルで自動割り当てするものです。デフォルトゲートウェイが空欄である点もこれと整合します。対処としては、DHCPサーバーの稼働状況、ケーブル接続、スイッチポート、VLAN設定などを確認します。"}, {"id": "npq-topology-dmz", "type": "match", "domain": "ネットワーク設計", "title": "ネットワークゾーンへの機器配置", "instruction": "各機器・サーバーを、セキュリティ設計上最も適切に配置すべきゾーンにドラッグして対応させてください。", "left": ["外部公開Webサーバー", "社内の業務用PC", "インターネットとの境界を守る機器", "社外からの攻撃をおびき寄せる囮"], "right": ["DMZ(スクリーンドサブネット)", "内部LAN(信頼ゾーン)", "境界(ペリメータ)", "隔離セグメント(ハニーポット)"], "answer": {"外部公開Webサーバー": "DMZ(スクリーンドサブネット)", "社内の業務用PC": "内部LAN(信頼ゾーン)", "インターネットとの境界を守る機器": "境界(ペリメータ)", "社外からの攻撃をおびき寄せる囮": "隔離セグメント(ハニーポット)"}, "explanation": "外部公開サーバーはDMZに置き、万一侵害されても内部LANへの影響を抑えます。業務用PCは信頼された内部LAN、ファイアウォールはインターネットとの境界、ハニーポットは他と隔離したセグメントに配置します。PBQでは「機器を正しいゾーンにドラッグする」形式が頻出です。"}], "security": [{"id": "spq-match-attacks", "type": "match", "domain": "攻撃手法の識別", "title": "シナリオと攻撃手法の対応", "instruction": "左側の各シナリオを、それが該当する攻撃手法にドラッグして対応させてください。", "left": ["経営者を装い緊急の送金を指示するメール", "正規サイトに似た紛らわしいドメインを取得", "漏洩済みの認証情報を複数サービスで試す", "標的がよく訪れる正規サイトを侵害して感染させる"], "right": ["ビジネスメール詐欺(BEC)", "タイポスクワッティング", "クレデンシャルスタッフィング", "ウォータリングホール攻撃"], "answer": {"経営者を装い緊急の送金を指示するメール": "ビジネスメール詐欺(BEC)", "正規サイトに似た紛らわしいドメインを取得": "タイポスクワッティング", "漏洩済みの認証情報を複数サービスで試す": "クレデンシャルスタッフィング", "標的がよく訪れる正規サイトを侵害して感染させる": "ウォータリングホール攻撃"}, "explanation": "BECは経営者や取引先になりすます金銭詐取、タイポスクワッティングは紛らわしいドメインによる誘導、クレデンシャルスタッフィングは漏洩認証情報の使い回しを狙う攻撃、ウォータリングホール攻撃は標的が訪れる正規サイトの侵害です。攻撃シナリオから手法名を選ばせる形式は頻出です。"}, {"id": "spq-match-cia", "type": "match", "domain": "CIAトライアドと対策", "title": "対策とCIA要素の対応", "instruction": "各セキュリティ対策を、それが主に保護するCIAトライアドの要素にドラッグして対応させてください。", "left": ["データの暗号化", "デジタル署名・ハッシュによる改ざん検知", "冗長化・バックアップ・負荷分散"], "right": ["機密性(Confidentiality)", "完全性(Integrity)", "可用性(Availability)"], "answer": {"データの暗号化": "機密性(Confidentiality)", "デジタル署名・ハッシュによる改ざん検知": "完全性(Integrity)", "冗長化・バックアップ・負荷分散": "可用性(Availability)"}, "explanation": "暗号化は第三者に読まれないための機密性、ハッシュやデジタル署名は改ざんされていないことを保証する完全性、冗長化やバックアップはいつでも使える状態を保つ可用性に対応します。対策とCIAの対応付けは基礎かつ頻出のテーマです。"}, {"id": "spq-incident-order", "type": "order", "domain": "インシデント対応", "title": "インシデント対応の順序", "instruction": "インシデント対応のライフサイクルを正しい順序に並べ替えてください(上から順に実施)。項目をドラッグして並べ替えます。", "items": ["準備", "検知と分析", "封じ込め・根絶・復旧", "事後活動(教訓の共有)"], "answer": ["準備", "検知と分析", "封じ込め・根絶・復旧", "事後活動(教訓の共有)"], "explanation": "標準的なインシデント対応は、準備 → 検知と分析 → 封じ込め・根絶・復旧 → 事後活動、の順で進みます。平時の準備が最初、振り返り(教訓の共有)が最後である点が問われやすいポイントです。"}, {"id": "spq-order-forensics", "type": "order", "domain": "デジタルフォレンジック", "title": "証拠収集の順序(揮発性の順序)", "instruction": "デジタルフォレンジックにおいて、揮発性の高いものから順に証拠を収集するのが原則です。揮発性が高い(先に収集すべき)順に並べ替えてください。", "items": ["CPUキャッシュ・レジスタ", "メモリ(RAM)の内容", "ディスク上のファイル", "バックアップテープ・アーカイブ"], "answer": ["CPUキャッシュ・レジスタ", "メモリ(RAM)の内容", "ディスク上のファイル", "バックアップテープ・アーカイブ"], "explanation": "揮発性の順序(Order of Volatility)の原則では、電源断などで失われやすいものから先に収集します。CPUキャッシュ/レジスタ → メモリ(RAM) → ディスク → バックアップ/アーカイブ の順です。電源を切ると失われるメモリ内容を、ディスクイメージ取得より先に確保する点が重要です。"}, {"id": "spq-match-controls", "type": "match", "domain": "セキュリティコントロールの分類", "title": "コントロールの分類", "instruction": "各対策を、その主たる分類にドラッグして対応させてください。", "left": ["監視カメラ作動中の看板", "サーバールームの施錠", "侵入検知システム(IDS)によるアラート", "バックアップからのデータ復旧"], "right": ["抑止的(Deterrent)", "予防的(Preventive)", "検知的(Detective)", "是正的(Corrective)"], "answer": {"監視カメラ作動中の看板": "抑止的(Deterrent)", "サーバールームの施錠": "予防的(Preventive)", "侵入検知システム(IDS)によるアラート": "検知的(Detective)", "バックアップからのデータ復旧": "是正的(Corrective)"}, "explanation": "抑止的は行為を思いとどまらせる(看板)、予防的は行為を未然に防ぐ(施錠)、検知的は発生を検知する(IDSアラート)、是正的は発生後の被害を修復する(バックアップ復旧)対策です。同じ監視カメラでも「看板=抑止」「録画=検知」のように役割で分類が変わる点に注意します。"}, {"id": "spq-mcq-keys", "type": "mcq", "domain": "暗号・PKI", "title": "鍵の使い分け", "instruction": "アリスがボブへ、内容を第三者に読まれないよう暗号化してメッセージを送りたい。アリスが暗号化に使用すべき鍵はどれか。", "choices": ["ボブの公開鍵", "ボブの秘密鍵", "アリスの公開鍵", "アリスの秘密鍵"], "answer": 0, "explanation": "機密性の確保(暗号化)では、受信者(ボブ)の公開鍵で暗号化します。そうすることで、対応するボブの秘密鍵を持つボブ本人だけが復号できます。もし署名(真正性・完全性の保証)であれば送信者(アリス)の秘密鍵で署名し、受信者はアリスの公開鍵で検証します。「暗号化=受信者の公開鍵」「署名=送信者の秘密鍵」の使い分けが頻出です。"}]};
+let currentExam = 'network';
+let pool = [];
+let idx = 0;
+let score = 0;
+let answered = false;
+
+const tabs = document.querySelectorAll('nav.tabs button');
+tabs.forEach(b=>b.addEventListener('click', ()=>{
+  currentExam = b.dataset.exam;
+  tabs.forEach(x=>x.classList.toggle('active', x===b));
+  document.getElementById('start-btn').textContent = (currentExam==='network'?'Network+':'Security+') + ' のPBQを開始';
+  showIntro();
+}));
+
+document.getElementById('start-btn').addEventListener('click', startQuiz);
+document.getElementById('restart-btn').addEventListener('click', startQuiz);
+
+function showIntro(){
+  document.getElementById('view-intro').style.display='block';
+  document.getElementById('view-quiz').style.display='none';
+  document.getElementById('view-done').style.display='none';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startQuiz(){
+  pool = DATA[currentExam].slice();
+  idx = 0; score = 0;
+  document.getElementById('view-intro').style.display='none';
+  document.getElementById('view-done').style.display='none';
+  document.getElementById('view-quiz').style.display='block';
+  renderQ();
+}
+
+function renderQ(){
+  answered = false;
+  const q = pool[idx];
+  document.getElementById('progress').textContent = `問題 ${idx+1} / ${pool.length}`;
+  const card = document.getElementById('qcard');
+  let html = `<div class="pbq-badge">PBQ · ${esc(q.domain)}</div>`;
+  html += `<div class="qmeta">${q.type==='match'?'ドラッグで対応付け':q.type==='order'?'並べ替え':q.type==='input'?'入力':'選択'}</div>`;
+  html += `<p class="qtitle">${esc(q.title)}</p>`;
+  html += `<p class="qinstr">${esc(q.instruction)}</p>`;
+  html += `<div id="qbody"></div>`;
+  html += `<div id="explain-slot"></div>`;
+  card.innerHTML = html;
+
+  if(q.type==='match') renderMatch(q);
+  else if(q.type==='order') renderOrder(q);
+  else if(q.type==='input') renderInput(q);
+  else if(q.type==='mcq') renderMcq(q);
+
+  renderButtons();
+}
+
+/* ---------- MATCH ---------- */
+let matchState = {};
+let selectedToken = null;
+function renderMatch(q){
+  matchState = {};
+  selectedToken = null;
+  const body = document.getElementById('qbody');
+  let html = '<div class="match-wrap">';
+  q.left.forEach((l,i)=>{
+    html += `<div class="match-row"><div class="match-left">${esc(l)}</div><div class="match-drop" data-left="${esc(l)}" id="drop-${i}">ここにドロップ</div></div>`;
+  });
+  html += '</div>';
+  html += '<div class="token-pool" id="pool"><span class="pool-label">下の項目をドラッグ、またはタップしてから対応先をタップ</span>';
+  shuffle(q.right).forEach((r)=>{
+    html += `<div class="token" draggable="true" data-val="${esc(r)}">${esc(r)}</div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+
+  const tokens = body.querySelectorAll('.token');
+  const drops = body.querySelectorAll('.match-drop');
+
+  tokens.forEach(t=>{
+    t.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', t.dataset.val); });
+    t.addEventListener('click', ()=>{
+      if(answered) return;
+      if(selectedToken===t){ t.classList.remove('selected'); selectedToken=null; }
+      else { tokens.forEach(x=>x.classList.remove('selected')); t.classList.add('selected'); selectedToken=t; }
+    });
+  });
+  drops.forEach(d=>{
+    d.addEventListener('dragover', e=>{ if(!answered) e.preventDefault(); });
+    d.addEventListener('drop', e=>{
+      if(answered) return;
+      e.preventDefault();
+      placeToken(d, e.dataTransfer.getData('text/plain'), q);
+    });
+    d.addEventListener('click', ()=>{
+      if(answered) return;
+      if(selectedToken){ placeToken(d, selectedToken.dataset.val, q); }
+      else if(d.classList.contains('filled')){
+        // tap a filled drop to clear it
+        const val = matchState[d.dataset.left];
+        delete matchState[d.dataset.left];
+        d.classList.remove('filled'); d.textContent='ここにドロップ';
+        refreshTokenUsage(q);
+        updateSubmitState(q);
+      }
+    });
+  });
+  updateSubmitState(q);
+}
+function placeToken(drop, val, q){
+  // remove val from any other drop first
+  Object.keys(matchState).forEach(k=>{ if(matchState[k]===val) delete matchState[k]; });
+  document.querySelectorAll('.match-drop').forEach(d=>{
+    if(d!==drop && matchState[d.dataset.left]===undefined && d.classList.contains('filled')){}
+  });
+  matchState[drop.dataset.left] = val;
+  // re-render drop labels
+  document.querySelectorAll('.match-drop').forEach(d=>{
+    const v = matchState[d.dataset.left];
+    if(v){ d.classList.add('filled'); d.textContent=v; }
+    else { d.classList.remove('filled'); d.textContent='ここにドロップ'; }
+  });
+  if(selectedToken){ selectedToken.classList.remove('selected'); selectedToken=null; }
+  refreshTokenUsage(q);
+  updateSubmitState(q);
+}
+function refreshTokenUsage(q){
+  const usedVals = new Set(Object.values(matchState));
+  document.querySelectorAll('#pool .token').forEach(t=>{
+    t.classList.toggle('used', usedVals.has(t.dataset.val));
+  });
+}
+function updateSubmitState(q){
+  const btn = document.getElementById('submit-btn');
+  if(!btn) return;
+  btn.disabled = Object.keys(matchState).length !== q.left.length;
+}
+function gradeMatch(q){
+  let allRight = true;
+  document.querySelectorAll('.match-drop').forEach(d=>{
+    const left = d.dataset.left;
+    const chosen = matchState[left];
+    const correct = q.answer[left];
+    if(chosen===correct){ d.classList.add('correct'); }
+    else { d.classList.add('wrong'); allRight=false;
+      d.textContent = `${chosen} → 正: ${correct}`; }
+  });
+  return allRight;
+}
+
+/* ---------- ORDER ---------- */
+let orderArr = [];
+function renderOrder(q){
+  orderArr = shuffle(q.items);
+  const body = document.getElementById('qbody');
+  drawOrder(q);
+  function drawOrder(q){
+    let html = '<div class="order-list" id="orderlist">';
+    orderArr.forEach((it,i)=>{
+      html += `<div class="order-item" draggable="true" data-idx="${i}"><span class="grip">≡</span><span class="pos">${i+1}</span><span>${esc(it)}</span><span class="order-btns"><button data-up="${i}">▲</button><button data-down="${i}">▼</button></span></div>`;
+    });
+    html += '</div>';
+    body.innerHTML = html;
+    const list = document.getElementById('orderlist');
+    let dragEl=null;
+    list.querySelectorAll('.order-item').forEach(item=>{
+      item.addEventListener('dragstart', ()=>{ if(answered)return; dragEl=item; item.classList.add('dragging'); });
+      item.addEventListener('dragend', ()=>{ item.classList.remove('dragging'); dragEl=null; });
+      item.addEventListener('dragover', e=>{
+        if(answered||!dragEl||dragEl===item) return;
+        e.preventDefault();
+        const rect=item.getBoundingClientRect();
+        const after = e.clientY > rect.top+rect.height/2;
+        const from=parseInt(dragEl.dataset.idx), to=parseInt(item.dataset.idx);
+        moveItem(from, after?to:to, after);
+      });
+    });
+    list.querySelectorAll('button[data-up]').forEach(b=>b.addEventListener('click',()=>{ if(answered)return; const i=parseInt(b.dataset.up); if(i>0){[orderArr[i-1],orderArr[i]]=[orderArr[i],orderArr[i-1]]; drawOrder(q);} }));
+    list.querySelectorAll('button[data-down]').forEach(b=>b.addEventListener('click',()=>{ if(answered)return; const i=parseInt(b.dataset.down); if(i<orderArr.length-1){[orderArr[i+1],orderArr[i]]=[orderArr[i],orderArr[i+1]]; drawOrder(q);} }));
+    function moveItem(from,to,after){
+      const item=orderArr.splice(from,1)[0];
+      let insertAt = orderArr.indexOf(orderArr[to]);
+      orderArr.splice(to,0,item);
+      drawOrder(q);
+    }
+  }
+  window.__drawOrder = drawOrder;
+}
+function gradeOrder(q){
+  let allRight = JSON.stringify(orderArr)===JSON.stringify(q.answer);
+  document.querySelectorAll('#orderlist .order-item').forEach((item,i)=>{
+    item.querySelector('.order-btns').style.display='none';
+    if(orderArr[i]===q.answer[i]) item.classList.add('correct');
+    else item.classList.add('wrong');
+  });
+  return allRight;
+}
+
+/* ---------- INPUT ---------- */
+function renderInput(q){
+  document.getElementById('qbody').innerHTML = `<input class="txt" id="txtin" type="text" autocomplete="off" autocapitalize="off" placeholder="ここに入力">`;
+  const inp = document.getElementById('txtin');
+  inp.addEventListener('input', ()=>{ const b=document.getElementById('submit-btn'); if(b) b.disabled = inp.value.trim()===''; });
+}
+function normalize(s){ return String(s).trim().toLowerCase().replace(/\s+/g,''); }
+function gradeInput(q){
+  const inp = document.getElementById('txtin');
+  const val = normalize(inp.value);
+  const ok = q.answer.some(a=>normalize(a)===val);
+  inp.classList.add(ok?'correct':'wrong');
+  inp.disabled = true;
+  return ok;
+}
+
+/* ---------- MCQ ---------- */
+let mcqChoice = null;
+function renderMcq(q){
+  mcqChoice = null;
+  const body = document.getElementById('qbody');
+  let html='';
+  const order = shuffle(q.choices.map((c,i)=>i));
+  order.forEach((orig,pos)=>{
+    html += `<button class="choice" data-orig="${orig}"><span class="idx">${pos+1}</span>${esc(q.choices[orig])}</button>`;
+  });
+  body.innerHTML = html;
+  body.querySelectorAll('.choice').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(answered) return;
+      mcqChoice = parseInt(btn.dataset.orig);
+      submitAnswer();
+    });
+  });
+}
+function gradeMcq(q){
+  const correct = q.answer;
+  document.querySelectorAll('#qbody .choice').forEach(b=>{
+    const orig = parseInt(b.dataset.orig);
+    b.classList.add('disabled');
+    if(orig===correct) b.classList.add('correct');
+    if(orig===mcqChoice && orig!==correct) b.classList.add('wrong');
+  });
+  return mcqChoice===correct;
+}
+
+/* ---------- buttons / flow ---------- */
+function renderButtons(){
+  const q = pool[idx];
+  const row = document.getElementById('btnrow');
+  if(q.type==='mcq'){
+    row.innerHTML = ''; // mcq submits on click
+  } else {
+    row.innerHTML = `<button class="primary" id="submit-btn">解答する</button>`;
+    const sb = document.getElementById('submit-btn');
+    if(q.type==='match'){ sb.disabled = true; }
+    else if(q.type==='input'){ sb.disabled = true; }
+    else if(q.type==='order'){ sb.disabled = false; }
+    sb.addEventListener('click', submitAnswer);
+  }
+}
+function submitAnswer(){
+  if(answered) return;
+  answered = true;
+  const q = pool[idx];
+  let ok=false;
+  if(q.type==='match') ok=gradeMatch(q);
+  else if(q.type==='order') ok=gradeOrder(q);
+  else if(q.type==='input') ok=gradeInput(q);
+  else if(q.type==='mcq') ok=gradeMcq(q);
+  if(ok) score++;
+  const slot = document.getElementById('explain-slot');
+  slot.innerHTML = `<div class="explain"><span class="verdict ${ok?'ok':'ng'}">${ok?'正解':'不正解'}</span><br>${esc(q.explanation)}</div>`;
+  const row = document.getElementById('btnrow');
+  row.innerHTML = `<button class="primary" id="next-btn">${idx+1<pool.length?'次の問題へ':'結果を見る'}</button>`;
+  document.getElementById('next-btn').addEventListener('click', next);
+}
+function next(){
+  idx++;
+  if(idx>=pool.length){
+    document.getElementById('view-quiz').style.display='none';
+    document.getElementById('view-done').style.display='block';
+    document.getElementById('done-title').textContent = `お疲れさまでした(${currentExam==='network'?'Network+':'Security+'})`;
+    document.getElementById('done-detail').textContent = `${pool.length}問中 ${score}問 正解しました。PBQは本番では部分点が与えられる形式もあります。間違えた形式は繰り返し練習しましょう。`;
+  } else {
+    renderQ();
+  }
+}
+
+showIntro();
+</script>
+</body>
+</html>
